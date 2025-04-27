@@ -1,0 +1,31 @@
+{
+  "name": "tsumi",
+  "version": "1.0.0",
+  "description": "Muiren, heraklessi(HERA) tarafından geliştirilen açık kaynak kodlu Discord bot projesidir.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node ."
+  },
+  "keywords": [],
+  "author": "HERA",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/opus": "^0.10.0",
+    "@discordjs/voice": "^0.18.0",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "bgutils-js": "^3.2.0",
+    "boxen": "^8.0.1",
+    "chalk": "^2.4.1",
+    "discord-player": "^7.1.0",
+    "discord-player-soundcloud": "^1.0.7",
+    "discord-player-spotify": "^1.1.2",
+    "discord-player-youtubei": "^1.4.5",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "ffmpeg-static": "^5.2.0",
+    "moment": "^2.29.4",
+    "moment-duration-format": "^2.3.2",
+    "moment-timezone": "^0.5.45",
+    "mongoose": "^8.13.2"
+  }
+}

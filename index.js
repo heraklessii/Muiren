@@ -20,18 +20,19 @@ const { Player } = require('discord-player');
 const { SpotifyExtractor } = require("discord-player-spotify");
 const { SoundcloudExtractor } = require("discord-player-soundcloud");
 const { YoutubeiExtractor } = require("discord-player-youtubei");
+const { AppleMusicExtractor } = require("discord-player-applemusic");
 const fs = require('node:fs');
 
-// İstemci (Client) yapılandırması
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
   ],
-  partials: [Partials.Channel]
+  partials: [Partials.Channel, Partials.Message]
 });
 
-// Global ayarlar ve koleksiyonların tanımlanması
 global.client = client;
 client.commands = new Collection();
 client.cooldowns = new Collection();
@@ -50,14 +51,15 @@ const player = new Player(client, {
   blockExtractors: [
     YoutubeiExtractor
   ],
-
 });
 
-async function init() {
-  await player.extractors.register(SpotifyExtractor, {});
-  await player.extractors.register(SoundcloudExtractor, {});
-} init();
+(async () => {
+  await player.extractors.register(SpotifyExtractor);
+  await player.extractors.register(SoundcloudExtractor);
+  await player.extractors.register(AppleMusicExtractor);
+})();
 
+require("./utils/player.js")(client);
 
 client.on(Events.ClientReady, () => {
   require('./utils/command.js')(client);
@@ -68,59 +70,5 @@ fs.readdirSync('./handlers').forEach(handler => {
 });
 
 client.login(process.env.TOKEN);
-
-player.events.on('playerStart', (queue, track) => {
-
-  const buttons = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId('pause')
-      .setLabel('Durdur')
-      .setStyle(ButtonStyle.Primary),
-    new ButtonBuilder()
-      .setCustomId('resume')
-      .setLabel('Devam')
-      .setStyle(ButtonStyle.Success),
-    new ButtonBuilder()
-      .setCustomId('stop')
-      .setLabel('Bitir')
-      .setStyle(ButtonStyle.Danger),
-    new ButtonBuilder()
-      .setCustomId('skip')
-      .setLabel('Atla')
-      .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
-      .setCustomId('volume')
-      .setLabel('Ses Ayarla')
-      .setStyle(ButtonStyle.Secondary)
-  );
-
-  queue.metadata.channel.send({ content: `🎶 **${track.title}** oynamaya başladı!`, components: [buttons] });
-
-});
-
-// Kanal boşsa otomatik ayrılma
-player.events.on('emptyChannel', (queue) => {
-  queue.metadata.channel.send('❌ | Kanalda kimse kalmadığı için ayrılıyorum.');
-});
-
-// Kuyruk sona erdiğinde, 1 dakika içinde yeni parça eklenmezse kanaldan çıkma
-player.events.on('emptyQueue', (queue) => {
-  setTimeout(() => {
-    if (!queue.isPlaying) {
-      queue.metadata.channel.send('⏳ | 1 dakika boyunca oynatma yok, kanaldan ayrılıyorum.');
-      if (queue.connection) queue.connection.disconnect();
-    }
-  }, 60000);
-});
-
-player.events.on('error', (queue, error) => {
-  console.log(`General player error event: ${error.message}`);
-  console.log(error);
-});
-
-player.events.on('playerError', (queue, error) => {
-  console.log(`Player error event: ${error.message}`);
-  console.log(error);
-});
 
 module.exports = client;

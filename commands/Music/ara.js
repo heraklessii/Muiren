@@ -16,6 +16,7 @@ module.exports = {
     ),
 
   run: async (client, interaction) => {
+    
     const player = useMainPlayer();
     const query = interaction.options.getString('sarki');
 

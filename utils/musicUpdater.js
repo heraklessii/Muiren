@@ -1,0 +1,120 @@
+// utils/musicUpdater.js
+const client = global.client;
+const {
+    ActionRowBuilder,
+    ButtonBuilder,
+    EmbedBuilder,
+    ButtonStyle
+} = require('discord.js');
+const MusicSetting = require('../models/MusicSetting');
+
+/**
+ * Edits the now-playing message with current queue state.
+ * @param {import('discord-player').Queue} queue
+ */
+async function UpdateQueueMsg(queue) {
+    const setting = await MusicSetting.findOne({ guildId: queue.guild.id });
+    if (!setting?.systemEnabled) return;
+
+    const channel = client.channels.cache.get(setting.channelId);
+    if (!channel) return;
+
+    let msg;
+    try {
+        msg = await channel.messages.fetch(setting.messageId);
+    } catch {
+        return;
+    }
+
+    const tracksArray = typeof queue.tracks.toArray === 'function'
+        ? queue.tracks.toArray()
+        : queue.tracks;
+
+    const list = tracksArray
+        .map((t, i) => `*\`${i + 1} • ${t.title} • [${t.duration}]\`* • ${t.requestedBy.username}`)
+        .slice(0, 10)
+        .join('\n') || 'Sırada başka şarkı yok.';
+
+    // Şu anki çalan parça
+    const current = queue.currentTrack;
+    if (!current) {
+        return UpdateMusic(queue);
+    }
+
+    const embed = new EmbedBuilder()
+        .setAuthor({ name: queue.node.isPlaying() ? 'Oynatılıyor...' : 'Duraklatıldı...', iconURL: 'https://cdn.discordapp.com/emojis/741605543046807626.gif' })
+        .setDescription(`**[${current.title}](${current.url})** \`[${current.duration}]\` • ${current.requestedBy}`)
+        .setImage(current.thumbnail)
+        .setFooter({ text: `${tracksArray.length} • Kuyrukta | Ses: %${queue.node.volume}` });
+
+    const row = new ActionRowBuilder().addComponents(
+        ['spause', 'sprevious', 'sstop', 'sskip', 'sloop'].map(id =>
+            new ButtonBuilder()
+                .setCustomId(id)
+                .setStyle(ButtonStyle.Secondary)
+                .setEmoji(
+                    id === 'spause' ? '⏯' :
+                        id === 'sprevious' ? '⬅' :
+                            id === 'sstop' ? '⏹' :
+                                id === 'sskip' ? '➡' :
+                                    '🔄'
+                )
+        )
+    );
+
+    try {
+        await msg.edit({
+            content: `**__Listesi:__**\n${list}`,
+            embeds: [embed],
+            components: [row]
+        });
+    } catch { }
+}
+
+/**
+ * Resets the message when no music is playing.
+ * @param {import('discord-player').Queue} queue
+ */
+async function UpdateMusic(queue) {
+    const setting = await MusicSetting.findOne({ guildId: queue.guild.id });
+    if (!setting?.systemEnabled) return;
+
+    const channel = client.channels.cache.get(setting.channelId);
+    if (!channel) return;
+
+    let msg;
+    try {
+        msg = await channel.messages.fetch(setting.messageId);
+    } catch {
+        return;
+    }
+
+    const embed = new EmbedBuilder()
+        .setAuthor({ name: 'Oynatılmıyor...', iconURL: 'https://cdn.discordapp.com/emojis/741605543046807626.gif' })
+        .setImage(process.env.BOT_BANNER_URL)
+        .setFooter({ text: `0 • Kuyrukta | Ses: %${queue.node.volume}` })
+        .setColor(client.color);
+
+
+    const row = new ActionRowBuilder().addComponents(
+        ['spause', 'sprevious', 'sstop', 'sskip', 'sloop'].map(id =>
+            new ButtonBuilder()
+                .setCustomId(id)
+                .setStyle(ButtonStyle.Secondary)
+                .setEmoji(
+                    id === 'spause' ? '⏯' :
+                        id === 'sprevious' ? '⬅' :
+                            id === 'sstop' ? '⏹' :
+                                id === 'sskip' ? '➡' :
+                                    '🔄'
+                )
+                .setDisabled(true)
+        )
+    );
+
+    try {
+        await msg.edit({ content: '**__Liste:__**\n', embeds: [embed], components: [row] });
+    } catch { }
+}
+
+module.exports = { UpdateQueueMsg, UpdateMusic };

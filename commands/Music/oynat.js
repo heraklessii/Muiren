@@ -14,8 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require('discord.js');
-const { QueryType } = require('discord-player');
-const { useMainPlayer } = require('discord-player');
+const { QueryType, useMainPlayer, useQueue } = require('discord-player');
 
 module.exports = {
   category: "Music",
@@ -40,7 +39,10 @@ module.exports = {
       });
 
     const voiceChannel = interaction.member.voice.channel;
-    if (!voiceChannel) return interaction.reply({ content: '❌ | Ses kanalında değilsiniz.', ephemeral: true });
+    if (!voiceChannel) return interaction.reply({
+      content: '❌ | Ses kanalında değilsiniz.',
+      ephemeral: true
+    });
 
     if (interaction.guild.members.me.voice.channel && interaction.guild.members.me.voice.channel.id !== voiceChannel.id)
       return interaction.reply({
@@ -60,7 +62,7 @@ module.exports = {
         ephemeral: true
       });
 
-    await interaction.deferReply();
+    await interaction.deferReply({ ephemeral: true });
 
     const searchResult = await player.search(songQuery, {
       requestedBy: interaction.user,
@@ -72,7 +74,8 @@ module.exports = {
         content: '❌ | Şarkı **Spotify veya Soundcloud** üzerinde bulunamadı!'
       });
 
-    const queue = player.nodes.create(interaction.guild, {
+    let queue = useQueue(interaction.guild.id);
+    if (!queue) queue = player.nodes.create(interaction.guild, {
       metadata: {
         channel: interaction.channel,
         requestedBy: interaction.user

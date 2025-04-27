@@ -29,8 +29,8 @@ module.exports = (client) => {
     const eventFiles = fs.readdirSync(folderPath).filter(file => file.endsWith(".js"));
 
     // Boxen içeriği
-    const header = `${chalk.magenta.bold("⚙️ Event klasörü:")} ${chalk.cyan(folder)} (${eventFiles.length} dosya)`;
     const list = eventFiles.map(f => `• ${chalk.yellow(f.replace(".js", ""))}`).join("\n");
+    const header = `${chalk.magenta.bold("⚙️ Event klasörü:")} ${chalk.cyan(folder)} (${eventFiles.length} dosya)`;
 
     console.log(
       boxen(`${header}\n${list}`, {

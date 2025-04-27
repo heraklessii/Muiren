@@ -13,12 +13,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-const fs    = require("fs").promises;
-const path  = require("path");
+const fs = require("fs").promises;
+const path = require("path");
 const chalk = require("chalk");
 const boxen = require("boxen").default;
 const slash = require("./slash.js");
-
 
 module.exports = async (client) => {
   const all = [];
@@ -29,14 +28,14 @@ module.exports = async (client) => {
     const jsFiles = files.filter(f => f.endsWith(".js"));
 
     const header = `${chalk.cyan.bold("📁 " + category)} klasöründen ${chalk.green(jsFiles.length)} komut yüklendi`;
-    const list   = jsFiles.map(f => `• ${chalk.yellow(f.replace(".js",""))}`).join("\n");
+    const list = jsFiles.map(f => `• ${chalk.yellow(f.replace(".js", ""))}`).join("\n");
 
     console.log(
       boxen(
         `${header}\n${list}`,
         {
-          padding: [0, 1],   
-          margin: 0,          
+          padding: [0, 1],
+          margin: 0,
           borderColor: "cyan",
           borderStyle: "round"
         }

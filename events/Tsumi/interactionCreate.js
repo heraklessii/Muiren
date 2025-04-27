@@ -19,8 +19,9 @@ const {
     EmbedBuilder, InteractionType, UserSelectMenuBuilder, StringSelectMenuBuilder,
     Events, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, PermissionsBitField
 } = require("discord.js");
-
+const MusicSetting = require("../../models/MusicSetting");
 const cooldowns = new Map();
+const { UpdateQueueMsg, UpdateMusic } = require("../../utils/musicUpdater");
 
 module.exports = {
     name: Events.InteractionCreate,
@@ -29,10 +30,10 @@ module.exports = {
         if (!interaction.guild || interaction.user.bot) return;
 
         if (interaction.isChatInputCommand()) {
+
             const cmd = client.commands.get(interaction.commandName);
             if (!cmd) return;
 
-            // cooldown
             const now = Date.now();
             const timestamps = cooldowns.get(cmd.name) || new Map();
             cooldowns.set(cmd.name, timestamps);
@@ -45,6 +46,7 @@ module.exports = {
                     return interaction.reply({ content: `❌ | ${remain}s bekle!`, ephemeral: true });
                 }
             }
+
             timestamps.set(interaction.user.id, now);
             setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
 
@@ -61,90 +63,71 @@ module.exports = {
 
         else if (interaction.isButton()) {
 
-            const { customId } = interaction;
+            const { customId, member } = interaction;
+
+            const setting = await MusicSetting.findOne({ guildId: interaction.guild.id });
+            if (!setting || !setting.systemEnabled) return;
+
             const queue = useQueue(interaction.guild.id);
-            const timeline = useTimeline({ node: interaction.guild.id });
+            const userVoice = member.voice.channel;
+            const botVoice = interaction.guild.members.me.voice.channel;
+            if (!queue || !userVoice) return interaction.reply({ content: ':x: | Bir ses kanalında olmalısınız.', ephemeral: true });
+            if (botVoice && botVoice.id !== userVoice.id) return interaction.reply({ content: ':x: | Benimle aynı kanalda olmalısınız.', ephemeral: true });
 
-            if (customId === 'pause') {
-
-                if (!queue || !queue.isPlaying()) return interaction.reply({
-                    content: '❌ | Şu anda herhangi bir şarkı oynatılmıyor.',
-                    ephemeral: true
-                });
-
-                if (timeline.paused)
-                    return interaction.reply({
-                        content: '❌ | Şarkı zaten durdurulmuş.',
-                        ephemeral: true
-
-                    })
-
-                timeline.pause();
-                return interaction.reply({ content: '✅ | Şarkı duraklatıldı.', ephemeral: true });
-
-            }
-
-            else if (customId === 'resume') {
-
-                if (!queue || !queue.isPlaying()) return interaction.reply({
-                    content: '❌ | Şu anda herhangi bir şarkı oynatılmıyor.',
-                    ephemeral: true
-                });
-
-                if (!timeline.paused)
-                    return interaction.reply({
-                        content: '❌ | Şarkı zaten devam ediyor.',
-                        ephemeral: true
-                    })
-
-                timeline.resume();
-                return interaction.reply({
-                    content: '✅ | Şarkı devam ediyor.',
-                    ephemeral: true
-                });
-
-            }
-
-            else if (customId === 'stop') {
-
-                if (!queue || !queue.isPlaying()) return interaction.reply({
-                    content: '❌ | Şu anda herhangi bir şarkı oynatılmıyor.',
-                    ephemeral: true
-                });
-
-                queue.delete();
-                return interaction.reply({
-                    content: '✅ | Şarkı durdu ve sıra sonlandırıldı.',
-                    ephemeral: true
-                });
-            }
-
-            else if (customId === 'skip') {
-
-                if (!queue || !queue.isPlaying()) return interaction.reply({
-                    content: '❌ | Şu anda herhangi bir şarkı oynatılmıyor.',
-                    ephemeral: true
-                });
-
-                if (queue.tracks.size < 1)
-                    return interaction.reply({
-                        content: `❌ | Atlanacak şarkı bulunamadı.`,
-                        ephemeral: true
-                    })
-
-                queue.node.skip()
-                interaction.message.delete()
-                return interaction.reply({
-                    content: '✅ | Şarkı atlandı.',
-                    ephemeral: true
-                });
-
+            switch (customId) {
+                case 'sprevious': {
+                    if (!queue.history.length) {
+                        return interaction.reply({ embeds: [new EmbedBuilder().setColor('Red').setDescription('🚨 | Önceki şarkı yok.')], ephemeral: true });
+                    }
+                    await queue.previous();
+                    UpdateQueueMsg(queue);
+                    return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription('⏮ | Önceki şarkıya geçildi.')], ephemeral: true });
+                }
+                case 'sskip': {
+                    if (queue.tracks.size < 1) {
+                        return interaction.reply({ embeds: [new EmbedBuilder().setColor('Red').setDescription('🚨 | Atlanacak şarkı yok.')], ephemeral: true });
+                    }
+                    queue.node.skip();
+                    UpdateQueueMsg(queue);
+                    return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription('⏭ | Şarkı atlandı.')], ephemeral: true });
+                }
+                case 'sstop': {
+                    queue.delete();
+                    queue.connection?.disconnect();
+                    UpdateMusic(queue);
+                    return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription(`🚫 | \`${userVoice.name}\` kanalından ayrıldım.`)], ephemeral: true });
+                }
+                case 'spause': {
+                    if (queue.node.isPaused()) {
+                        queue.node.resume();
+                        UpdateQueueMsg(queue);
+                        return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription('⏯ | Devam ettirildi.')], ephemeral: true });
+                    }
+                    else {
+                        queue.node.pause();
+                        UpdateQueueMsg(queue);
+                        return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription('⏯ | Duraklatıldı.')], ephemeral: true });
+                    }
+                }
+                case 'sloop': {
+                    const mode = queue.repeatMode;
+                    if (mode === 0) {
+                        queue.setRepeatMode(1);
+                        return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription('🔁 | Tekrar modu açıldı.')], ephemeral: true });
+                    }
+                    else {
+                        queue.setRepeatMode(0);
+                        return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription('🔁 | Tekrar modu kapatıldı.')], ephemeral: true });
+                    }
+                }
+                default:
+                    return;
             }
 
         }
 
         // --- Select menu interactions ---
-        if (interaction.isStringSelectMenu() && interaction.customId === 'ara_select') {
+        else if (interaction.isStringSelectMenu() && interaction.customId === 'ara_select') {
             // Acknowledge
             await interaction.deferReply({ ephemeral: true });
 
@@ -171,7 +154,7 @@ module.exports = {
             if (!voiceChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.Connect)) {
                 return interaction.followUp({ content: '❌ | Katılma iznim yok.', ephemeral: true });
             }
-            
+
             if (!voiceChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.Speak)) {
                 return interaction.followUp({ content: '❌ | Konuşma iznim yok.', ephemeral: true });
             }

@@ -18,9 +18,8 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, Collection, Events, ActionRowBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Player } = require('discord-player');
 const { SpotifyExtractor } = require("discord-player-spotify");
-const { SoundcloudExtractor } = require("discord-player-soundcloud");
 const { YoutubeiExtractor } = require("discord-player-youtubei");
-const { AppleMusicExtractor } = require("discord-player-applemusic");
+const { SoundcloudExtractor } = require("discord-player-soundcloud");
 const fs = require('node:fs');
 
 const client = new Client({
@@ -46,17 +45,16 @@ client.yellow = "#FFD700";
 
 const player = new Player(client, {
   blockStreamFrom: [
-    YoutubeiExtractor
+    SpotifyExtractor
   ],
   blockExtractors: [
-    YoutubeiExtractor
+    SoundcloudExtractor
   ],
 });
 
 (async () => {
   await player.extractors.register(SpotifyExtractor);
-  await player.extractors.register(SoundcloudExtractor);
-  await player.extractors.register(AppleMusicExtractor);
+  await player.extractors.register(YoutubeiExtractor);
 })();
 
 require("./utils/player.js")(client);
@@ -70,5 +68,22 @@ fs.readdirSync('./handlers').forEach(handler => {
 });
 
 client.login(process.env.TOKEN);
+
+const originalWarn = console.warn;
+console.warn = (...args) => {
+  // Yalnızca “[YOUTUBEJS]” ile başlayan uyarıları yoksay
+  if (typeof args[0] === 'string' && args[0].startsWith('[YOUTUBEJS]')) {
+    return;
+  }
+  originalWarn.apply(console, args);
+};
+
+const originalDebug = console.debug;
+console.debug = (...args) => {
+  if (typeof args[0] === 'string' && args[0].startsWith('[YOUTUBEJS]')) {
+    return;
+  }
+  originalDebug.apply(console, args);
+};
 
 module.exports = client;

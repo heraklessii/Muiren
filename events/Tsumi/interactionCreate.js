@@ -14,7 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 const client = global.client;
-const { useQueue, useTimeline, useMainPlayer } = require('discord-player');
+const { useQueue, useMainPlayer } = require('discord-player');
 const {
     EmbedBuilder, InteractionType, UserSelectMenuBuilder, StringSelectMenuBuilder,
     Events, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, PermissionsBitField
@@ -87,6 +87,17 @@ module.exports = {
                     if (queue.tracks.size < 1) {
                         return interaction.reply({ embeds: [new EmbedBuilder().setColor('Red').setDescription('🚨 | Atlanacak şarkı yok.')], ephemeral: true });
                     }
+                    
+                    if (queue.repeatMode === 1) {
+
+                        const embed = new EmbedBuilder()
+                            .setColor(client.color)
+                            .setDescription(":x: | Tekrar modu açık olduğu için atlayamıyorum.")
+
+                        return interaction.reply({ embeds: [embed], ephemeral: true })
+
+                    }
+                    
                     queue.node.skip();
                     UpdateQueueMsg(queue);
                     return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription('⏭ | Şarkı atlandı.')], ephemeral: true });

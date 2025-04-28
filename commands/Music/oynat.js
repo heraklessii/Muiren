@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require('discord.js');
+const { SlashCommandBuilder, PermissionsBitField } = require('discord.js');
 const { QueryType, useMainPlayer, useQueue } = require('discord-player');
 
 module.exports = {
@@ -21,97 +21,90 @@ module.exports = {
   cooldown: 5,
   data: new SlashCommandBuilder()
     .setName('oynat')
-    .setDescription('Şarkı oynatır.')
-    .addStringOption(option =>
-      option.setName('şarkı')
-        .setDescription('Şarkı adı veya bağlantısı')
-        .setRequired(true)
-    ),
+    .setDescription('Şarkı veya playlist oynatır.')
+    .addStringOption(opt =>
+      opt.setName('şarkı')
+        .setDescription('Şarkı/playlist adı veya bağlantısı')
+        .setRequired(true)),
+
   run: async (client, interaction) => {
 
     const player = useMainPlayer();
-    const songQuery = interaction.options.getString('şarkı');
-
-    if (songQuery.includes('youtube.com') || songQuery.includes('youtu.be'))
-      return interaction.reply({
-        content: '❌ | **Youtube** üzerinden şarkı oynatamıyorum. Lütfen Spotify veya SoundCloud kullanın.',
-        ephemeral: true
-      });
+    const query = interaction.options.getString('şarkı');
 
     const voiceChannel = interaction.member.voice.channel;
-    if (!voiceChannel) return interaction.reply({
-      content: '❌ | Ses kanalında değilsiniz.',
-      ephemeral: true
-    });
-
+    if (!voiceChannel) return interaction.reply({ content: '❌ | Ses kanalında değilsiniz.', ephemeral: true });
+    
     if (interaction.guild.members.me.voice.channel && interaction.guild.members.me.voice.channel.id !== voiceChannel.id)
-      return interaction.reply({
-        content: '❌ | Başka bir ses kanalında çalıyorum!',
-        ephemeral: true
-      });
-
+      return interaction.reply({ content: '❌ | Başka bir ses kanalındayım.', ephemeral: true });
+    
     if (!voiceChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.Connect))
-      return interaction.reply({
-        content: '❌ | Ses kanalına katılma iznim yok!',
-        ephemeral: true
-      });
-
+      return interaction.reply({ content: '❌ | Kanala bağlanma iznim yok.', ephemeral: true });
+    
     if (!voiceChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.Speak))
-      return interaction.reply({
-        content: '❌ | Ses kanalında konuşma iznim yok!',
-        ephemeral: true
-      });
+      return interaction.reply({ content: '❌ | Konuşma iznim yok.', ephemeral: true });
 
+    // ✅ Tek deferReply, tek cevap:
     await interaction.deferReply({ ephemeral: true });
 
-    const searchResult = await player.search(songQuery, {
+    // Arama
+    const searchResult = await player.search(query, {
       requestedBy: interaction.user,
       searchEngine: QueryType.AUTO
     });
+    if (!searchResult.tracks.length) {
+      return interaction.editReply({ content: '❌ | Hiç parça bulunamadı.' });
+    }
 
-    if (!searchResult || !searchResult.tracks.length)
-      return interaction.editReply({
-        content: '❌ | Şarkı **Spotify veya Soundcloud** üzerinde bulunamadı!'
-      });
-
+    // Kuyruk oluştur/çek
     let queue = useQueue(interaction.guild.id);
-    if (!queue) queue = player.nodes.create(interaction.guild, {
-      metadata: {
-        channel: interaction.channel,
-        requestedBy: interaction.user
-      }
-    });
-
-    try {
-      if (!queue.connection) await queue.connect(voiceChannel);
-    } catch (error) {
-      queue.delete();
-      return interaction.editReply({
-        content: '❌ | Ses kanalına bağlanırken hata oluştu!'
+    if (!queue) {
+      queue = player.nodes.create(interaction.guild, {
+        metadata: { channel: interaction.channel, requestedBy: interaction.user }
       });
     }
 
-    const track = searchResult.tracks[0];
-    queue.addTrack(track);
+    // Bağlan
+    try {
+      if (!queue.connection) await queue.connect(voiceChannel);
+    } catch {
+      queue.delete();
+      return interaction.editReply({ content: '❌ | Ses kanalına bağlanılamadı.' });
+    }
 
-    if (!queue.node.isPlaying())
-      try {
-        await queue.node.play();
-      } catch (err) {
-        if (err.code === 'ERR_NO_RESULT') {
-          return interaction.editReply({
-            content: '❌ | Şarkı çalınamadı, kaynak bulunamadı veya erişilemiyor.'
-          });
+    if (searchResult.playlist) {
+      queue.addTrack(searchResult.tracks);
+      if (!queue.node.isPlaying()) {
+        try {
+          await queue.node.play();
+        } catch (err) {
+          const msg = err.code === 'ERR_NO_RESULT'
+            ? '❌ | Parça oynatılamadı, bulunamadı veya erişilemiyor.'
+            : '❌ | Oynatılırken bir hata oluştu.';
+          return interaction.editReply({ content: msg });
         }
-        return interaction.editReply({
-          content: '❌ | Şarkı oynatılırken beklenmedik bir hata oluştu.'
-        });
       }
-
-    return interaction.editReply({
-      content: `🎶 **${track.title}** kuyruğa eklendi!`,
-      ephemeral: true
-    });
-
+      return interaction.editReply({
+        content: `🎶 **${searchResult.tracks.length}** parçalık playlist kuyruğa eklendi!`
+      });
+    }
+    else {
+      // Sadece ilk parçayı ekle ve çal
+      const track = searchResult.tracks[0];
+      queue.addTrack(track);
+      if (!queue.node.isPlaying()) {
+        try {
+          await queue.node.play();
+        } catch (err) {
+          const msg = err.code === 'ERR_NO_RESULT'
+            ? '❌ | Parça oynatılamadı, bulunamadı veya erişilemiyor.'
+            : '❌ | Oynatılırken bir hata oluştu.';
+          return interaction.editReply({ content: msg });
+        }
+      }
+      return interaction.editReply({
+        content: `🎶 **${track.title}** kuyruğa eklendi!`
+      });
+    }
   }
 };

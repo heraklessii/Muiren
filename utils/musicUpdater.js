@@ -1,18 +1,24 @@
-// utils/musicUpdater.js
+// Tsumi Bot - Discord Bot Project
+// Copyright (C) 2025  Tsumi Bot Contributors
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 const client = global.client;
-const {
-    ActionRowBuilder,
-    ButtonBuilder,
-    EmbedBuilder,
-    ButtonStyle
-} = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, EmbedBuilder, ButtonStyle } = require('discord.js');
 const MusicSetting = require('../models/MusicSetting');
 
-/**
- * Edits the now-playing message with current queue state.
- * @param {import('discord-player').Queue} queue
- */
 async function UpdateQueueMsg(queue) {
+
     const setting = await MusicSetting.findOne({ guildId: queue.guild.id });
     if (!setting?.systemEnabled) return;
 
@@ -37,9 +43,7 @@ async function UpdateQueueMsg(queue) {
 
     // Şu anki çalan parça
     const current = queue.currentTrack;
-    if (!current) {
-        return UpdateMusic(queue);
-    }
+    if (!current) return UpdateMusic(queue);
 
     const embed = new EmbedBuilder()
         .setAuthor({ name: queue.node.isPlaying() ? 'Oynatılıyor...' : 'Duraklatıldı...', iconURL: 'https://cdn.discordapp.com/emojis/741605543046807626.gif' })
@@ -71,10 +75,6 @@ async function UpdateQueueMsg(queue) {
     } catch { }
 }
 
-/**
- * Resets the message when no music is playing.
- * @param {import('discord-player').Queue} queue
- */
 async function UpdateMusic(queue) {
     const setting = await MusicSetting.findOne({ guildId: queue.guild.id });
     if (!setting?.systemEnabled) return;

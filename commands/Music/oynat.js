@@ -32,39 +32,30 @@ module.exports = {
     const player = useMainPlayer();
     const query = interaction.options.getString('şarkı');
 
-    const voiceChannel = interaction.member.voice.channel;
-    if (!voiceChannel) return interaction.reply({ content: '❌ | Ses kanalında değilsiniz.', ephemeral: true });
-    
-    if (interaction.guild.members.me.voice.channel && interaction.guild.members.me.voice.channel.id !== voiceChannel.id)
-      return interaction.reply({ content: '❌ | Başka bir ses kanalındayım.', ephemeral: true });
-    
-    if (!voiceChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.Connect))
-      return interaction.reply({ content: '❌ | Kanala bağlanma iznim yok.', ephemeral: true });
-    
-    if (!voiceChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.Speak))
-      return interaction.reply({ content: '❌ | Konuşma iznim yok.', ephemeral: true });
+    // ---- İzin Kontrolleri ---- //
+    const voiceChannel = await checks(interaction);
+    if (!voiceChannel) return;
 
-    // ✅ Tek deferReply, tek cevap:
     await interaction.deferReply({ ephemeral: true });
 
-    // Arama
     const searchResult = await player.search(query, {
       requestedBy: interaction.user,
       searchEngine: QueryType.AUTO
     });
+
     if (!searchResult.tracks.length) {
       return interaction.editReply({ content: '❌ | Hiç parça bulunamadı.' });
     }
 
-    // Kuyruk oluştur/çek
     let queue = useQueue(interaction.guild.id);
     if (!queue) {
       queue = player.nodes.create(interaction.guild, {
-        metadata: { channel: interaction.channel, requestedBy: interaction.user }
+        metadata: { channel: interaction.channel, requestedBy: interaction.user },
+        leaveOnEnd: true,
+        leaveOnEndCooldown: 60000
       });
     }
 
-    // Bağlan
     try {
       if (!queue.connection) await queue.connect(voiceChannel);
     } catch {
@@ -88,6 +79,7 @@ module.exports = {
         content: `🎶 **${searchResult.tracks.length}** parçalık playlist kuyruğa eklendi!`
       });
     }
+
     else {
       // Sadece ilk parçayı ekle ve çal
       const track = searchResult.tracks[0];
@@ -106,5 +98,34 @@ module.exports = {
         content: `🎶 **${track.title}** kuyruğa eklendi!`
       });
     }
+
   }
 };
+
+async function checks(interaction) {
+
+  const voiceChannel = interaction.member.voice.channel;
+  if (!voiceChannel) {
+    await interaction.reply({ content: '❌ | Ses kanalında değilsiniz.', ephemeral: true });
+    return null;
+  }
+
+  const permissions = voiceChannel.permissionsFor(interaction.guild.members.me);
+  if (!permissions.has(PermissionsBitField.Flags.Connect)) {
+    await interaction.reply({ content: '❌ | Kanala bağlanma iznim yok.', ephemeral: true });
+    return null;
+  }
+
+  const botVoice = interaction.guild.members.me.voice.channel;
+  if (botVoice && botVoice.id !== voiceChannel.id) {
+    await interaction.reply({ content: '❌ | Başka bir ses kanalındayım.', ephemeral: true });
+    return null;
+  }
+
+  if (!permissions.has(PermissionsBitField.Flags.Speak)) {
+    await interaction.reply({ content: '❌ | Konuşma iznim olmadığı için şarkı oynatamıyorum.', ephemeral: true });
+    return null;
+  }
+
+  return voiceChannel;
+}

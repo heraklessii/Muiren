@@ -31,9 +31,11 @@ module.exports = {
                     queue.connection?.disconnect();
                 }
             }
+
         }
 
         if (channel.type === ChannelType.GuildText) {
+
             const setting = await MusicSetting.findOne({ guildId: channel.guild.id });
             if (setting && setting.channelId === channel.id) {
                 setting.systemEnabled = false;
@@ -41,6 +43,7 @@ module.exports = {
                 setting.messageId = null;
                 await setting.save();
             }
+
         }
 
     }

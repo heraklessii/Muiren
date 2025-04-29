@@ -243,9 +243,7 @@ module.exports = async (client) => {
     // Kanal boşsa otomatik ayrılma
     player.events.on('emptyChannel', async (queue) => {
 
-        const setting = await MusicSetting.findOne({ guildId: queue.guild.id });
-        if (setting && setting.systemEnabled) UpdateMusic(queue);
-
+        UpdateMusic(queue)
         const Embed = new EmbedBuilder()
             .setColor(client.color)
             .setDescription(`🎵 | Kanalda tek başıma kaldım! Ayrılıyorum.`)
@@ -256,17 +254,22 @@ module.exports = async (client) => {
 
     // Kuyruk sona erdiğinde, 1 dakika içinde yeni parça eklenmezse kanaldan çıkma
     player.events.on('emptyQueue', (queue) => {
+        UpdateMusic(queue)
         setTimeout(() => {
-            if (!queue.isPlaying) {
+            if (!queue.node.isPlaying()) {
                 const Embed = new EmbedBuilder()
                     .setColor(client.color)
                     .setDescription(`⏳ | 1 dakika boyunca oynatma yok, kanaldan ayrılıyorum.`)
 
-                queue.metadata.channel.send({ embeds: [Embed] });
                 queue.connection?.disconnect();
+                return queue.metadata.channel.send({ embeds: [Embed] });
             }
         }, 60000);
     });
+
+    player.events.on('disconnect', (queue) => {
+        return UpdateMusic(queue)
+    })
 
     player.events.on(GuildQueueEvent.PlayerFinish, async (queue, track) => {
 
@@ -275,10 +278,9 @@ module.exports = async (client) => {
         const setting = await MusicSetting.findOne({ guildId: queue.guild.id });
         if (!setting || !setting.systemEnabled) {
 
-            queue.delete();
             const embed = new EmbedBuilder()
-                .setDescription(`:musical_note: | Listedeki bütün şarkıları oynatmayı bitirdim.`)
-                .setColor(client.green)
+                .setDescription(`🎵 | Listedeki bütün şarkıları oynatmayı bitirdim.`)
+                .setColor(client.color)
 
             return queue.metadata.channel.send({ embeds: [embed] }).then((sent) => {
                 setTimeout(() => {
@@ -291,8 +293,8 @@ module.exports = async (client) => {
 
             UpdateMusic(queue)
             const embed = new EmbedBuilder()
-                .setDescription(`:musical_note: | Listedeki bütün şarkıları oynatmayı bitirdim.`)
-                .setColor(client.green)
+                .setDescription(`🎵 | Listedeki bütün şarkıları oynatmayı bitirdim.`)
+                .setColor(client.color)
 
             return queue.metadata.channel.send({ embeds: [embed] }).then((sent) => {
                 setTimeout(() => {

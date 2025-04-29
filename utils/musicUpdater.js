@@ -37,7 +37,7 @@ async function UpdateQueueMsg(queue) {
         : queue.tracks;
 
     const list = tracksArray
-        .map((t, i) => `*\`${i + 1} • ${t.title} • [${t.duration}]\`* • ${t.requestedBy.username}`)
+        .map((t, i) => `*\`${i + 1} • ${t.title} • [${t.duration}]\`* • ${t.requestedBy}`)
         .slice(0, 10)
         .join('\n') || 'Sırada başka şarkı yok.';
 
@@ -68,7 +68,7 @@ async function UpdateQueueMsg(queue) {
 
     try {
         await msg.edit({
-            content: `**__Listesi:__**\n${list}`,
+            content: `**__Şarkı Listesi:__**\n${list}`,
             embeds: [embed],
             components: [row]
         });
@@ -76,6 +76,7 @@ async function UpdateQueueMsg(queue) {
 }
 
 async function UpdateMusic(queue) {
+
     const setting = await MusicSetting.findOne({ guildId: queue.guild.id });
     if (!setting?.systemEnabled) return;
 
@@ -90,30 +91,24 @@ async function UpdateMusic(queue) {
     }
 
     const embed = new EmbedBuilder()
-        .setAuthor({ name: 'Oynatılmıyor...', iconURL: 'https://cdn.discordapp.com/emojis/741605543046807626.gif' })
+        .setColor(client.color)
         .setImage(process.env.BOT_BANNER_URL)
-        .setFooter({ text: `0 • Kuyrukta | Ses: %${queue.node.volume}` })
-        .setColor(client.color);
-
+        .setAuthor({ name: 'Oynatılmıyor...', iconURL: 'https://cdn.discordapp.com/emojis/741605543046807626.gif' })
+        .setFooter({ text: `Muiren, HERA tarafından geliştirilmektedir.` })
 
     const row = new ActionRowBuilder().addComponents(
         ['spause', 'sprevious', 'sstop', 'sskip', 'sloop'].map(id =>
             new ButtonBuilder()
                 .setCustomId(id)
                 .setStyle(ButtonStyle.Secondary)
-                .setEmoji(
-                    id === 'spause' ? '⏯' :
-                        id === 'sprevious' ? '⬅' :
-                            id === 'sstop' ? '⏹' :
-                                id === 'sskip' ? '➡' :
-                                    '🔄'
-                )
+                .setEmoji(id === 'spause' ? '⏯️' : id === 'sprevious' ? '⬅️' :
+                    id === 'sstop' ? '⏹' : id === 'sskip' ? '➡️' : '🔄')
                 .setDisabled(true)
         )
     );
 
     try {
-        await msg.edit({ content: '**__Liste:__**\n', embeds: [embed], components: [row] });
+        await msg.edit({ content: '**__Şarkı Listesi:__**\nOynatılan şarkılar burada yer alacak.', embeds: [embed], components: [row] });
     } catch { }
 }
 

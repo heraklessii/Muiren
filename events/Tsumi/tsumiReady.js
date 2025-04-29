@@ -20,7 +20,6 @@ module.exports = {
   name: Events.ClientReady,
   async execute(client) {
 
-    // Aktiviteleri döngüyle ayarla
     const activities = [
       { name: 'Muiren, HERA tarafından geliştirilmektedir.', type: ActivityType.Custom },
       { name: 'Komutlara /yardım ile ulaşabilirsiniz.', type: ActivityType.Custom }

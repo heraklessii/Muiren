@@ -29,6 +29,8 @@ module.exports = {
 
         if (!interaction.guild || interaction.user.bot) return;
 
+        const { customId, member } = interaction;
+
         if (interaction.isChatInputCommand()) {
 
             const cmd = client.commands.get(interaction.commandName);
@@ -63,78 +65,172 @@ module.exports = {
 
         else if (interaction.isButton()) {
 
-            const { customId, member } = interaction;
-
             const setting = await MusicSetting.findOne({ guildId: interaction.guild.id });
             if (!setting || !setting.systemEnabled) return;
 
             const queue = useQueue(interaction.guild.id);
             const userVoice = member.voice.channel;
-            const botVoice = interaction.guild.members.me.voice.channel;
-            if (!queue || !userVoice) return interaction.reply({ content: ':x: | Bir ses kanalında olmalısınız.', ephemeral: true });
-            if (botVoice && botVoice.id !== userVoice.id) return interaction.reply({ content: ':x: | Benimle aynı kanalda olmalısınız.', ephemeral: true });
+            const djRoleID = setting?.djRoleID;
 
             switch (customId) {
+
                 case 'sprevious': {
-                    if (!queue.history.length) {
-                        return interaction.reply({ embeds: [new EmbedBuilder().setColor('Red').setDescription('🚨 | Önceki şarkı yok.')], ephemeral: true });
-                    }
+
+                    // ---- İzin Kontrolleri ---- //
+                    const voiceChannel = await checks(interaction, queue, djRoleID);
+                    if (!voiceChannel) return;
+
+                    if (!queue.history.length)
+                        return interaction.reply({
+                            embeds: [
+                                new EmbedBuilder()
+                                    .setColor(client.color)
+                                    .setDescription('❌ | Önceki şarkı yok.')
+                            ], ephemeral: true
+                        });
+
                     await queue.previous();
                     UpdateQueueMsg(queue);
-                    return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription('⏮ | Önceki şarkıya geçildi.')], ephemeral: true });
+
+                    return interaction.reply({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor(client.color)
+                                .setDescription('⬅️ | Önceki şarkıya geçildi.')
+                        ], ephemeral: true
+                    });
+
                 }
+
                 case 'sskip': {
-                    if (queue.tracks.size < 1) {
-                        return interaction.reply({ embeds: [new EmbedBuilder().setColor('Red').setDescription('🚨 | Atlanacak şarkı yok.')], ephemeral: true });
-                    }
-                    
-                    if (queue.repeatMode === 1) {
 
-                        const embed = new EmbedBuilder()
-                            .setColor(client.color)
-                            .setDescription(":x: | Tekrar modu açık olduğu için atlayamıyorum.")
+                    // ---- İzin Kontrolleri ---- //
+                    const check = await checks(interaction, queue);
+                    if (!check) return;
 
-                        return interaction.reply({ embeds: [embed], ephemeral: true })
+                    if (queue.tracks.size < 1)
+                        return interaction.reply({
+                            embeds: [
+                                new EmbedBuilder()
+                                    .setColor(client.color)
+                                    .setDescription('❌ | Atlanacak şarkı yok.')
+                            ], ephemeral: true
+                        });
 
-                    }
-                    
+                    if (queue.repeatMode === 1)
+                        return interaction.reply({
+                            embeds: [
+                                new EmbedBuilder()
+                                    .setColor(client.color)
+                                    .setDescription("❌ | Tekrar modu açık olduğu için atlayamıyorum.")
+                            ], ephemeral: true
+                        });
+
                     queue.node.skip();
                     UpdateQueueMsg(queue);
-                    return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription('⏭ | Şarkı atlandı.')], ephemeral: true });
+
+                    return interaction.reply({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor(client.color)
+                                .setDescription('➡️ | Şarkı atlandı.')
+                        ], ephemeral: true
+                    });
+
                 }
+
                 case 'sstop': {
+
+                    // ---- İzin Kontrolleri ---- //
+                    const voiceChannel = await checks(interaction, queue);
+                    if (!voiceChannel) return;
+
                     queue.delete();
                     queue.connection?.disconnect();
                     UpdateMusic(queue);
-                    return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription(`🚫 | \`${userVoice.name}\` kanalından ayrıldım.`)], ephemeral: true });
+
+                    return interaction.reply({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor(client.color)
+                                .setDescription(`✅ | ${userVoice} kanalından ayrıldım.`)
+                        ], ephemeral: true
+                    });
+
                 }
+
                 case 'spause': {
+
+                    // ---- İzin Kontrolleri ---- //
+                    const voiceChannel = await checks(interaction, queue);
+                    if (!voiceChannel) return;
+
                     if (queue.node.isPaused()) {
+
                         queue.node.resume();
                         UpdateQueueMsg(queue);
-                        return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription('⏯ | Devam ettirildi.')], ephemeral: true });
+
+                        return interaction.reply({
+                            embeds: [
+                                new EmbedBuilder()
+                                    .setColor(client.color)
+                                    .setDescription('⏯️ | Devam ettirildi.')
+                            ], ephemeral: true
+                        });
                     }
+
                     else {
+
                         queue.node.pause();
                         UpdateQueueMsg(queue);
-                        return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription('⏯ | Duraklatıldı.')], ephemeral: true });
+
+                        return interaction.reply({
+                            embeds: [
+                                new EmbedBuilder()
+                                    .setColor(client.color)
+                                    .setDescription('⏯️ | Duraklatıldı.')
+                            ], ephemeral: true
+                        });
                     }
+
                 }
+
                 case 'sloop': {
+
+                    // ---- İzin Kontrolleri ---- //
+                    const voiceChannel = await checks(interaction, queue);
+                    if (!voiceChannel) return;
+
                     const mode = queue.repeatMode;
                     if (mode === 0) {
+
                         queue.setRepeatMode(1);
-                        return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription('🔁 | Tekrar modu açıldı.')], ephemeral: true });
+                        return interaction.reply({
+                            embeds: [new EmbedBuilder()
+                                .setColor('Green')
+                                .setDescription('🔁 | Tekrar modu açıldı.')
+                            ], ephemeral: true
+                        });
                     }
-                    else {
+
+                    else if (mode === 1) {
+
                         queue.setRepeatMode(0);
-                        return interaction.reply({ embeds: [new EmbedBuilder().setColor('Green').setDescription('🔁 | Tekrar modu kapatıldı.')], ephemeral: true });
+                        return interaction.reply({
+                            embeds: [
+                                new EmbedBuilder()
+                                    .setColor('Green')
+                                    .setDescription('🔁 | Tekrar modu kapatıldı.')
+                            ], ephemeral: true
+                        });
                     }
+
                 }
+
                 default:
                     return;
-            }
 
+            }
         }
 
         // --- Select menu interactions ---
@@ -185,3 +281,39 @@ module.exports = {
 
     }
 };
+
+async function checks(interaction, queue, djRoleID) {
+
+    const voiceChannel = interaction.member.voice.channel;
+    if (!voiceChannel) {
+        await interaction.reply({ content: '❌ | Ses kanalında değilsiniz.', ephemeral: true });
+        return null;
+    }
+
+    const permissions = voiceChannel.permissionsFor(interaction.guild.members.me);
+    if (!permissions.has(PermissionsBitField.Flags.Connect)) {
+        await interaction.reply({ content: '❌ | Kanala bağlanma iznim yok.', ephemeral: true });
+        return null;
+    }
+
+    const botVoice = interaction.guild.members.me.voice.channel;
+    if (botVoice && botVoice.id !== voiceChannel.id) {
+        await interaction.reply({ content: '❌ | Başka bir ses kanalındayım.', ephemeral: true });
+        return null;
+    }
+
+    if (!permissions.has(PermissionsBitField.Flags.Speak)) {
+        await interaction.reply({ content: '❌ | Konuşma iznim olmadığı için şarkı oynatamıyorum.', ephemeral: true });
+        return null;
+    }
+
+    // Kullanıcıda DJ rolü varsa kontrolden muaf olur.
+    const isDJ = djRoleID && interaction.member.roles.cache.has(djRoleID);
+    const prevTrack = queue.currentTrack;
+    if (!isDJ && prevTrack?.requestedBy?.id !== interaction.user.id) {
+        await interaction.reply({ content: '❌ | Bu şarkıyı sen açmadın, butonları kullanamazsın.', ephemeral: true });
+        return null;
+    }
+
+    return voiceChannel;
+}

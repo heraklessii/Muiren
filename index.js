@@ -14,12 +14,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 require('dotenv').config();
-
 const { Client, GatewayIntentBits, Partials, Collection, Events, ActionRowBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Player } = require('discord-player');
 const { SpotifyExtractor } = require("discord-player-spotify");
 const { YoutubeiExtractor } = require("discord-player-youtubei");
-const { SoundcloudExtractor } = require("discord-player-soundcloud");
 const fs = require('node:fs');
 
 const client = new Client({
@@ -44,12 +42,9 @@ client.blue = "#449afe";
 client.yellow = "#FFD700";
 
 const player = new Player(client, {
-  blockStreamFrom: [
-    SpotifyExtractor
-  ],
-  blockExtractors: [
-    SoundcloudExtractor
-  ],
+  leaveOnEnd: false,
+  blockStreamFrom: [],
+  blockExtractors: [],
 });
 
 (async () => {

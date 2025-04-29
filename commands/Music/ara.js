@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, PermissionsBitField } = require('discord.js');
 const { useMainPlayer } = require('discord-player');
 const { QueryType } = require('discord-player');
 
@@ -25,15 +25,19 @@ module.exports = {
     .setDescription('Şarkı ara ve sonuçlardan seçim yap.')
     .addStringOption(option =>
       option
-        .setName('sarki')
+        .setName('şarkı')
         .setDescription('Aranacak şarkı adı veya bağlantısı')
         .setRequired(true)
     ),
 
   run: async (client, interaction) => {
-    
+
     const player = useMainPlayer();
-    const query = interaction.options.getString('sarki');
+    const query = interaction.options.getString('şarkı');
+
+    // ---- İzin Kontrolleri ---- //
+    const voiceChannel = await checks(interaction);
+    if (!voiceChannel) return;
 
     await interaction.deferReply({ ephemeral: true });
 
@@ -42,14 +46,10 @@ module.exports = {
       searchEngine: QueryType.AUTO
     });
 
-    if (!searchResult || !searchResult.tracks.length) {
+    if (!searchResult || !searchResult.tracks.length)
       return interaction.editReply({ content: '❌ | Şarkı bulunamadı!' });
-    }
 
-    // İlk 5 sonucu al
     const tracks = searchResult.tracks.slice(0, 5);
-
-    // Select menü oluştur
     const menu = new StringSelectMenuBuilder()
       .setCustomId('ara_select')
       .setPlaceholder('Şarkı seçin...')
@@ -62,11 +62,38 @@ module.exports = {
       );
 
     const row = new ActionRowBuilder().addComponents(menu);
-
-    // Menü ile cevapla
     return interaction.editReply({
       content: '🎶 Aşağıdan çalmak istediğiniz şarkıyı seçin:',
       components: [row]
     });
+
   }
 };
+
+async function checks(interaction) {
+
+  const voiceChannel = interaction.member.voice.channel;
+  if (!voiceChannel) {
+    await interaction.reply({ content: '❌ | Ses kanalında değilsiniz.', ephemeral: true });
+    return null;
+  }
+
+  const permissions = voiceChannel.permissionsFor(interaction.guild.members.me);
+  if (!permissions.has(PermissionsBitField.Flags.Connect)) {
+    await interaction.reply({ content: '❌ | Kanala bağlanma iznim yok.', ephemeral: true });
+    return null;
+  }
+
+  const botVoice = interaction.guild.members.me.voice.channel;
+  if (botVoice && botVoice.id !== voiceChannel.id) {
+    await interaction.reply({ content: '❌ | Başka bir ses kanalındayım.', ephemeral: true });
+    return null;
+  }
+
+  if (!permissions.has(PermissionsBitField.Flags.Speak)) {
+    await interaction.reply({ content: '❌ | Konuşma iznim olmadığı için şarkı oynatamıyorum.', ephemeral: true });
+    return null;
+  }
+
+  return voiceChannel;
+}

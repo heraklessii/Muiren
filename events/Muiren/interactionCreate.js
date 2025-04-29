@@ -14,7 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 const client = global.client;
-const { useQueue, useMainPlayer } = require('discord-player');
+const { useQueue, useMainPlayer, QueryType } = require('discord-player');
 const {
     EmbedBuilder, InteractionType, UserSelectMenuBuilder, StringSelectMenuBuilder,
     Events, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, PermissionsBitField
@@ -28,8 +28,6 @@ module.exports = {
     async execute(interaction) {
 
         if (!interaction.guild || interaction.user.bot) return;
-
-        const { customId, member } = interaction;
 
         if (interaction.isChatInputCommand()) {
 
@@ -58,12 +56,18 @@ module.exports = {
                 }
             } catch (err) {
                 console.error(err);
-                interaction.reply({ content: '❌ | Bir hata oluştu.', ephemeral: true });
+                if (interaction.deferred || interaction.replied) {
+                    await interaction.editReply({ content: '❌ | Komut çalıştırılırken bir hata oluştu.' });
+                } else {
+                    await interaction.reply({ content: '❌ | Komut çalıştırılırken bir hata oluştu.', ephemeral: true });
+                }
             }
             return;
         }
 
         else if (interaction.isButton()) {
+
+            const { customId, member } = interaction;
 
             const setting = await MusicSetting.findOne({ guildId: interaction.guild.id });
             if (!setting || !setting.systemEnabled) return;
@@ -168,8 +172,6 @@ module.exports = {
                     if (queue.node.isPaused()) {
 
                         queue.node.resume();
-                        UpdateQueueMsg(queue);
-
                         return interaction.reply({
                             embeds: [
                                 new EmbedBuilder()
@@ -182,8 +184,6 @@ module.exports = {
                     else {
 
                         queue.node.pause();
-                        UpdateQueueMsg(queue);
-
                         return interaction.reply({
                             embeds: [
                                 new EmbedBuilder()
@@ -233,50 +233,50 @@ module.exports = {
             }
         }
 
-        // --- Select menu interactions ---
-        else if (interaction.isStringSelectMenu() && interaction.customId === 'ara_select') {
-            // Acknowledge
-            await interaction.deferReply({ ephemeral: true });
+        else if (interaction.isStringSelectMenu()) {
 
-            const trackUrl = interaction.values[0];
-            const guildId = interaction.guild.id;
-            const member = interaction.member;
-            const channel = interaction.channel;
-            const player = useMainPlayer();
+            if (interaction.customId === 'ara_select') {
 
-            // Get or create queue
-            let queue = useQueue(guildId);
-            if (!queue) {
-                queue = player.nodes.create(interaction.guild, {
-                    metadata: { channel, requestedBy: interaction.user }
+                const trackUrl = interaction.values[0];
+                const guildId = interaction.guild.id;
+                const channel = interaction.channel;
+                const player = useMainPlayer();
+
+                const searchResult = await player.search(trackUrl, {
+                    requestedBy: interaction.user,
+                    searchEngine: QueryType.AUTO
                 });
+                if (!searchResult.tracks.length) {
+                    return interaction.reply({ content: '❌ | Şarkı bulunamadı!', ephemeral: true });
+                }
+
+                let queue = useQueue(guildId);
+                if (!queue) {
+                    queue = player.nodes.create(interaction.guild, {
+                        metadata: { channel, requestedBy: interaction.user },
+                        leaveOnEnd: true,
+                        leaveOnEndCooldown: 60000
+                    });
+                }
+
+                // ---- İzin Kontrolleri ---- //
+                const voiceChannel = await checks2(interaction);
+                if (!voiceChannel) return;
+
+                const track = searchResult.tracks[0];
+
+                try {
+                    if (!queue.connection) await queue.connect(voiceChannel);
+                    queue.addTrack(track);
+                    if (!queue.node.isPlaying()) await queue.node.play();
+                    return interaction.reply({ content: '🎶 | Şarkı sıraya eklendi!', ephemeral: true });
+                } catch (err) {
+                    queue.delete();
+                    return interaction.reply({ content: '❌ | Şarkı çalınırken hata oluştu.', ephemeral: true });
+                }
+
             }
 
-            // Voice channel checks
-            const voiceChannel = member.voice.channel;
-            if (!voiceChannel) {
-                return interaction.followUp({ content: '❌ | Ses kanalında değilsiniz.', ephemeral: true });
-            }
-
-            if (!voiceChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.Connect)) {
-                return interaction.followUp({ content: '❌ | Katılma iznim yok.', ephemeral: true });
-            }
-
-            if (!voiceChannel.permissionsFor(interaction.guild.members.me).has(PermissionsBitField.Flags.Speak)) {
-                return interaction.followUp({ content: '❌ | Konuşma iznim yok.', ephemeral: true });
-            }
-
-            // Add track and play
-            try {
-                if (!queue.connection) await queue.connect(voiceChannel);
-                queue.addTrack(trackUrl);
-                if (!queue.node.isPlaying()) await queue.node.play();
-                return interaction.followUp({ content: '🎶 Şarkı oynatılıyor!', ephemeral: true });
-            } catch (err) {
-                console.error(err);
-                queue.delete();
-                return interaction.followUp({ content: '❌ | Şarkı çalınırken hata oluştu.', ephemeral: true });
-            }
         }
 
     }
@@ -309,9 +309,37 @@ async function checks(interaction, queue, djRoleID) {
 
     // Kullanıcıda DJ rolü varsa kontrolden muaf olur.
     const isDJ = djRoleID && interaction.member.roles.cache.has(djRoleID);
-    const prevTrack = queue.currentTrack;
-    if (!isDJ && prevTrack?.requestedBy?.id !== interaction.user.id) {
+    const track = queue.currentTrack;
+    if (!isDJ && track?.requestedBy?.id !== interaction.user.id) {
         await interaction.reply({ content: '❌ | Bu şarkıyı sen açmadın, butonları kullanamazsın.', ephemeral: true });
+        return null;
+    }
+
+    return voiceChannel;
+}
+
+async function checks2(interaction) {
+
+    const voiceChannel = interaction.member.voice.channel;
+    if (!voiceChannel) {
+        await interaction.reply({ content: '❌ | Ses kanalında değilsiniz.', ephemeral: true });
+        return null;
+    }
+
+    const permissions = voiceChannel.permissionsFor(interaction.guild.members.me);
+    if (!permissions.has(PermissionsBitField.Flags.Connect)) {
+        await interaction.reply({ content: '❌ | Kanala bağlanma iznim yok.', ephemeral: true });
+        return null;
+    }
+
+    const botVoice = interaction.guild.members.me.voice.channel;
+    if (botVoice && botVoice.id !== voiceChannel.id) {
+        await interaction.reply({ content: '❌ | Başka bir ses kanalındayım.', ephemeral: true });
+        return null;
+    }
+
+    if (!permissions.has(PermissionsBitField.Flags.Speak)) {
+        await interaction.reply({ content: '❌ | Konuşma iznim olmadığı için şarkı oynatamıyorum.', ephemeral: true });
         return null;
     }
 

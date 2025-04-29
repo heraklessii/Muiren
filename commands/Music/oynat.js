@@ -32,11 +32,11 @@ module.exports = {
     const player = useMainPlayer();
     const query = interaction.options.getString('şarkı');
 
+    await interaction.deferReply({ ephemeral: true });
+
     // ---- İzin Kontrolleri ---- //
     const voiceChannel = await checks(interaction);
     if (!voiceChannel) return;
-
-    await interaction.deferReply({ ephemeral: true });
 
     const searchResult = await player.search(query, {
       requestedBy: interaction.user,
@@ -50,7 +50,9 @@ module.exports = {
     let queue = useQueue(interaction.guild.id);
     if (!queue) {
       queue = player.nodes.create(interaction.guild, {
-        metadata: { channel: interaction.channel, requestedBy: interaction.user }
+        metadata: { channel: interaction.channel, requestedBy: interaction.user },
+        leaveOnEnd: true,
+        leaveOnEndCooldown: 60000
       });
     }
 
@@ -61,40 +63,28 @@ module.exports = {
       return interaction.editReply({ content: '❌ | Ses kanalına bağlanılamadı.' });
     }
 
+    // Playlist
     if (searchResult.playlist) {
-      queue.addTrack(searchResult.tracks);
-      if (!queue.node.isPlaying()) {
-        try {
-          await queue.node.play();
-        } catch (err) {
-          const msg = err.code === 'ERR_NO_RESULT'
-            ? '❌ | Parça oynatılamadı, bulunamadı veya erişilemiyor.'
-            : '❌ | Oynatılırken bir hata oluştu.';
-          return interaction.editReply({ content: msg });
-        }
+      try {
+        queue.addTrack(searchResult.tracks);
+        if (!queue.node.isPlaying()) await queue.node.play();
+        await interaction.editReply({ content: `🎶 | **${searchResult.tracks.length}** parçalık playlist kuyruğa eklendi!` })
+      } catch (err) {
+        queue.delete();
+        await interaction.editReply({ content: '❌ | Playlist oynatılamadı.' })
       }
-      return interaction.editReply({
-        content: `🎶 **${searchResult.tracks.length}** parçalık playlist kuyruğa eklendi!`
-      });
+      return;
     }
 
-    else {
-      // Sadece ilk parçayı ekle ve çal
-      const track = searchResult.tracks[0];
+    // Tek parça
+    const track = searchResult.tracks[0];
+    try {
       queue.addTrack(track);
-      if (!queue.node.isPlaying()) {
-        try {
-          await queue.node.play();
-        } catch (err) {
-          const msg = err.code === 'ERR_NO_RESULT'
-            ? '❌ | Parça oynatılamadı, bulunamadı veya erişilemiyor.'
-            : '❌ | Oynatılırken bir hata oluştu.';
-          return interaction.editReply({ content: msg });
-        }
-      }
-      return interaction.editReply({
-        content: `🎶 **${track.title}** kuyruğa eklendi!`
-      });
+      if (!queue.node.isPlaying()) await queue.node.play();
+      await interaction.editReply({ content: `🎶 | **${track.title}** kuyruğa eklendi!` })
+    } catch (err) {
+      queue.delete();
+      return interaction.editReply({ content: '❌ | Şarkı oynatılamıyor.' })
     }
 
   }
@@ -104,24 +94,24 @@ async function checks(interaction) {
 
   const voiceChannel = interaction.member.voice.channel;
   if (!voiceChannel) {
-    await interaction.reply({ content: '❌ | Ses kanalında değilsiniz.', ephemeral: true });
+    await interaction.editReply({ content: '❌ | Ses kanalında değilsiniz.' });
     return null;
   }
 
   const permissions = voiceChannel.permissionsFor(interaction.guild.members.me);
   if (!permissions.has(PermissionsBitField.Flags.Connect)) {
-    await interaction.reply({ content: '❌ | Kanala bağlanma iznim yok.', ephemeral: true });
+    await interaction.editReply({ content: '❌ | Kanala bağlanma iznim yok.' });
     return null;
   }
 
   const botVoice = interaction.guild.members.me.voice.channel;
   if (botVoice && botVoice.id !== voiceChannel.id) {
-    await interaction.reply({ content: '❌ | Başka bir ses kanalındayım.', ephemeral: true });
+    await interaction.editReply({ content: '❌ | Başka bir ses kanalındayım.' });
     return null;
   }
 
   if (!permissions.has(PermissionsBitField.Flags.Speak)) {
-    await interaction.reply({ content: '❌ | Konuşma iznim olmadığı için şarkı oynatamıyorum.', ephemeral: true });
+    await interaction.editReply({ content: '❌ | Konuşma iznim olmadığı için şarkı oynatamıyorum.' });
     return null;
   }
 

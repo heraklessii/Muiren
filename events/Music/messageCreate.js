@@ -54,7 +54,7 @@ module.exports = {
     if (!queue) {
       queue = player.nodes.create(message.guild, {
         metadata: { channel: message.channel, requestedBy: message.member },
-        leaveOnEnd: false,
+        leaveOnEnd: true,
         leaveOnEndCooldown: 60000
       });
     }
@@ -74,7 +74,6 @@ module.exports = {
         if (!queue.node.isPlaying()) await queue.node.play();
         await message.channel.send(`🎶 | **${searchResult.tracks.length}** parçalık playlist kuyruğa eklendi!`)
           .then(sent => setTimeout(() => sent.delete().catch(() => { }), 3000));
-        UpdateQueueMsg(queue);
       } catch (err) {
         queue.delete();
         await message.channel.send('❌ | Playlist oynatılamadı.')

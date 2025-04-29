@@ -41,11 +41,25 @@ client.black = "#000001";
 client.blue = "#449afe";
 client.yellow = "#FFD700";
 
-const player = new Player(client, {});
+const player = new Player(client, {
+  smoothVolume: true,
+  ytdlOptions: {
+    filter: 'audioonly',
+    quality: 'highestaudio',
+    highWaterMark: 1 << 30,
+    dlChunkSize: 0,
+  }
+});
 
 (async () => {
-  await player.extractors.register(SpotifyExtractor);
-  await player.extractors.register(YoutubeiExtractor);
+  await player.extractors.register(SpotifyExtractor, {
+    clientId: process.env.SPOTIFY_ID ?? null,
+    clientSecret: process.env.SPOTIFY_SECRET ?? null
+  });
+  await player.extractors.register(YoutubeiExtractor, {
+    authentication: process.env.YOUTUBE_CREDENTIALS ?? null,
+    
+  });
 })();
 
 require("./utils/player.js")(client);

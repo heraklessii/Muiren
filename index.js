@@ -41,11 +41,7 @@ client.black = "#000001";
 client.blue = "#449afe";
 client.yellow = "#FFD700";
 
-const player = new Player(client, {
-  leaveOnEnd: false,
-  blockStreamFrom: [],
-  blockExtractors: [],
-});
+const player = new Player(client, {});
 
 (async () => {
   await player.extractors.register(SpotifyExtractor);

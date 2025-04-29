@@ -50,9 +50,7 @@ module.exports = {
     let queue = useQueue(interaction.guild.id);
     if (!queue) {
       queue = player.nodes.create(interaction.guild, {
-        metadata: { channel: interaction.channel, requestedBy: interaction.user },
-        leaveOnEnd: true,
-        leaveOnEndCooldown: 60000
+        metadata: { channel: interaction.channel, requestedBy: interaction.user }
       });
     }
 

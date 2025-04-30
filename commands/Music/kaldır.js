@@ -44,31 +44,31 @@ module.exports = {
     const djRoleID = setting?.djRoleID;
 
     // ---- İzin Kontrolleri ---- //
-    const voiceChannel = await checks(interaction, djRoleID);
+    const voiceChannel = await checks(interaction);
     if (!voiceChannel) return;
 
     const position = interaction.options.getInteger('şarkı');
-    const tracks = queue.tracks;
-    if (position >= tracks.length)
+    const tracks = queue.tracks.toArray()
+    if (!tracks[position - 1])
       return interaction.reply({ content: '❌ | Belirttiğiniz sırada şarkı bulunamadı.', ephemeral: true });
 
-    const target = tracks[position];
+    const target = tracks[position - 1];
     const isDJ = djRoleID && interaction.member.roles.cache.has(djRoleID);
     if (!isDJ && target.requestedBy?.id !== interaction.user.id) {
       return interaction.reply({ content: '❌ | Başkasının eklediği şarkıyı kaldıramazsın.', ephemeral: true });
     }
 
-    const removed = tracks.splice(position, 1)[0];
+    const removed = queue.removeTrack(position - 1)
     const embed = new EmbedBuilder()
       .setColor(client.color)
       .setDescription(`☑️ | **[${removed.title}](${removed.url})** şarkısı listeden kaldırıldı.`);
 
-    return interaction.reply({ embeds: [embed] });
+    return interaction.reply({ embeds: [embed], ephemeral: true });
 
   }
 };
 
-async function checks(interaction, djRoleID) {
+async function checks(interaction) {
 
   const voiceChannel = interaction.member.voice.channel;
   if (!voiceChannel) {

@@ -45,10 +45,18 @@ async function UpdateQueueMsg(queue) {
     const current = queue.currentTrack;
     if (!current) return UpdateMusic(queue);
 
+    const progress = queue.node.createProgressBar({ size: 45 });
+    const status = queue.node.isPaused() ? "⏸️ |" : "🔴 |";
+
     const embed = new EmbedBuilder()
         .setAuthor({ name: queue.node.isPlaying() ? 'Oynatılıyor...' : 'Duraklatıldı...', iconURL: 'https://cdn.discordapp.com/emojis/741605543046807626.gif' })
-        .setDescription(`**[${current.title}](${current.url})** \`[${current.duration}]\` • ${current.requestedBy}`)
+        .setDescription(`**[${current.title}](${current.url})** • ${current.requestedBy}`)
         .setImage(current.thumbnail)
+        .addFields({
+            name: `Mevcut Süre: \`[${queue.node.getTimestamp().current.label} / ${current.duration}]\``,
+            value: `\`\`\`${status} ${progress}\`\`\``,
+            inline: false
+        })
         .setFooter({ text: `${tracksArray.length} • Kuyrukta | Ses: %${queue.node.volume}` });
 
     const row = new ActionRowBuilder().addComponents(
@@ -112,4 +120,65 @@ async function UpdateMusic(queue) {
     } catch { }
 }
 
-module.exports = { UpdateQueueMsg, UpdateMusic };
+async function update(queue) {
+
+    const nowplay = queue.metadata.nowplayMessage;
+    if (!nowplay) return;
+
+    const tracksArray = (typeof queue.tracks.toArray === 'function')
+        ? queue.tracks.toArray()
+        : queue.tracks;
+
+    const list = tracksArray
+        .map((t, i) => `*\`${i + 1} • ${t.title} • [${t.duration}]\`* • ${t.requestedBy}`)
+        .slice(0, 5)
+        .join('\n') || 'Sırada başka şarkı yok.';
+
+    const currentTrack = queue.currentTrack;
+    const progress = queue.node.createProgressBar({ size: 45 });
+    const status = queue.node.isPaused() ? "⏸️ |" : "🔴 |";
+
+    const Embed = new EmbedBuilder()
+        .setAuthor({
+            name: queue.node.isPaused() ? 'Şarkı durduruldu...' : 'Oynatılıyor...',
+            iconURL: "https://cdn.discordapp.com/emojis/741605543046807626.gif"
+        })
+        .setImage(currentTrack.thumbnail)
+        .setColor(client.color)
+        .setDescription(`**[${currentTrack.title}](${currentTrack.url})**`)
+        .addFields({ name: `Oynatan Kişi:`, value: `${currentTrack.requestedBy}`, inline: true })
+        .addFields({ name: `Mevcut Ses:`, value: `**%${queue.node.volume}**`, inline: true })
+        .addFields({ name: `Toplam Süre:`, value: `${currentTrack.duration}`, inline: true })
+        .addFields({
+            name: `Mevcut Süre: \`[${queue.node.getTimestamp().current.label} / ${currentTrack.duration}]\``,
+            value: `\`\`\`${status} ${progress}\`\`\``,
+            inline: false
+        });
+
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId('pause')
+            .setEmoji('⏯️')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('previous')
+            .setEmoji('⬅️')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('stop')
+            .setEmoji('⏹')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('skip')
+            .setEmoji('➡️')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('loop')
+            .setEmoji('🔄')
+            .setStyle(ButtonStyle.Secondary)
+    );
+
+    return nowplay.edit({ content: `**__Şarkı Listesi:__**\n${list}`, embeds: [Embed], components: [row] });
+}
+
+module.exports = { UpdateQueueMsg, UpdateMusic, update };

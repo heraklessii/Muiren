@@ -14,6 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { UpdateQueueMsg, update } = require("../../utils/musicUpdater");
 const { useQueue } = require('discord-player');
 const MusicSetting = require("../../models/MusicSetting");
 
@@ -52,6 +53,8 @@ module.exports = {
     }
 
     queue.tracks.shuffle();
+    UpdateQueueMsg(queue)
+    if (queue.metadata.nowplayMessage) await update(queue);
     const success = new EmbedBuilder()
       .setColor(client.color)
       .setDescription('☑️ | Şarkı listesini başarıyla karıştırdım.');

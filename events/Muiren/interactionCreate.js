@@ -15,13 +15,10 @@
 
 const client = global.client;
 const { useQueue, useMainPlayer, QueryType, useHistory } = require('discord-player');
-const {
-    EmbedBuilder, InteractionType, UserSelectMenuBuilder, StringSelectMenuBuilder,
-    Events, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, PermissionsBitField
-} = require("discord.js");
+const { UpdateQueueMsg, UpdateMusic } = require("../../utils/musicUpdater");
+const { EmbedBuilder, InteractionType, Events } = require("discord.js");
 const MusicSetting = require("../../models/MusicSetting");
 const cooldowns = new Map();
-const { UpdateQueueMsg, UpdateMusic } = require("../../utils/musicUpdater");
 
 module.exports = {
     name: Events.InteractionCreate,

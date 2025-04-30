@@ -64,7 +64,7 @@ module.exports = {
 
       const embed = new EmbedBuilder()
         .setColor(client.color)
-        .setDescription(":x: | Sırada atlanacak hiçbir şarkı yok.")
+        .setDescription("❌ | Sırada atlanacak hiçbir şarkı yok.")
 
       return interaction.reply({ embeds: [embed], ephemeral: true })
 
@@ -74,13 +74,24 @@ module.exports = {
 
       const embed = new EmbedBuilder()
         .setColor(client.color)
-        .setDescription(":x: | **Şarkı tekrar modu** açık olduğu için atlayamıyorum.")
+        .setDescription("❌ | **Şarkı tekrar modu** açık olduğu için atlayamıyorum.")
 
       return interaction.reply({ embeds: [embed], ephemeral: true })
 
     }
 
     try {
+
+      if (queue.metadata.nowplayMessage) {
+        queue.metadata.nowplayMessage.delete().catch(() => { });
+        queue.metadata.nowplayMessage = null;
+      }
+
+      if (queue.metadata.collector) {
+        queue.metadata.collector.stop();
+        queue.metadata.collector = null;
+      }
+      
       queue.node.skip();
       const success = new EmbedBuilder()
         .setColor(client.color)

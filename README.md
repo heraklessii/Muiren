@@ -74,9 +74,7 @@
    - `.env.example` dosyasını `.env` olarak yeniden adlandırın.  
    - Değişkenleri doldurun.
 4. Botu çalıştırın:
-   ```bash
-   node .
-   ```
+   - `start.bat`
 <br>
 
 ## 🙌 Katkı

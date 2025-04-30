@@ -36,7 +36,7 @@ module.exports = async (client) => {
                 : queue.tracks;
 
             const list = tracksArray
-                .map((t, i) => `*\`${i + 1} • ${t.title} • [${t.duration}]\`* • ${t.requestedBy}`)
+                .map((t, i) => `*\`${i + 1} • ${t.title} • [${t.duration}]\`* • ${t.requestedBy.username}`)
                 .slice(0, 5)
                 .join('\n') || 'Sırada başka şarkı yok.';
 

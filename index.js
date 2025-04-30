@@ -41,10 +41,11 @@ client.red = "#FC6161";
 client.green = "#73D673";
 
 const player = new Player(client, {
-  // Şarkı bilgilerini Soundcloud üzerinden almayı engeller ancak stream yapabilir.
-  // Eğer Soundcloud üzerinden stream yapılmamasını istiyorsanız aşağıya da eklemelisiniz.
-  blockExtractors: [SoundcloudExtractor],
-  blockStreamFrom: [/*SoundcloudExtractor*/],
+  // Eğer Soundcloud üzerinden oynatmamasını isterseniz yorum satırlarını kaldırabilirsiniz.
+  // UNUTMAYIN! Buraya asla Youtube eklememelisiniz yoksa şarkı oynatamazsınız.
+  // Tek başına Soundcloud sadece o platform üzerinden stream yapabilmenizi sağlar.
+  blockExtractors: [/*SoundcloudExtractor.identifier*/],
+  blockStreamFrom: [/*SoundcloudExtractor.identifier*/],
   // Buradaki ayarlara dokunmanızı önermem, şu anki hâli ile ses kalitesi oldukça iyi.
   smoothVolume: true,
   ytdlOptions: {

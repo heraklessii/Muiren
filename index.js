@@ -56,10 +56,7 @@ const player = new Player(client, {
     clientId: process.env.SPOTIFY_ID ?? null,
     clientSecret: process.env.SPOTIFY_SECRET ?? null
   });
-  await player.extractors.register(YoutubeiExtractor, {
-    authentication: process.env.YOUTUBE_CREDENTIALS ?? null,
-    
-  });
+  await player.extractors.register(YoutubeiExtractor);
 })();
 
 require("./utils/player.js")(client);

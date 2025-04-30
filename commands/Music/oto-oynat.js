@@ -41,14 +41,27 @@ module.exports = {
     const voiceChannel = await checks(interaction, djRoleID);
     if (!voiceChannel) return;
 
-    const autoplay = queue.setRepeatMode(queue.repeatMode === 0 ? 3 : 0);
-    const status = autoplay === 3 ? 'Açık' : 'Kapalı';
+    if (queue.repeatMode === 0 || queue.repeatMode === 1 || queue.repeatMode === 2) {
 
-    const embed = new EmbedBuilder()
-      .setColor(client.color)
-      .setDescription(`☑️ | Oto Oynatma: \`${status}\``);
+      queue.setRepeatMode(3)
+      const embed = new EmbedBuilder()
+        .setColor(client.color)
+        .setDescription(`☑️ | Oto Oynatma: \`Aktif\``);
 
-    return interaction.reply({ embeds: [embed] });
+      return interaction.reply({ embeds: [embed] });
+
+    }
+
+    else {
+
+      queue.setRepeatMode(0)
+      const embed = new EmbedBuilder()
+        .setColor(client.color)
+        .setDescription(`☑️ | Oto Oynatma: \`Kapalı\``);
+
+      return interaction.reply({ embeds: [embed] });
+
+    }
 
   }
 };

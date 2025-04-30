@@ -14,7 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const { useQueue } = require('discord-player');
+const { useQueue, useHistory } = require('discord-player');
 const MusicSetting = require("../../models/MusicSetting");
 
 module.exports = {
@@ -41,35 +41,24 @@ module.exports = {
     const voiceChannel = await checks(interaction, queue, djRoleID);
     if (!voiceChannel) return;
 
-    const previousTracks = queue.history;
-    if (!previousTracks.length)
-      return interaction.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor(client.color)
-            .setDescription('❌ | Önceki şarkı bulunamadı!')
-        ], ephemeral: true
-      });
+    const history = useHistory(interaction.guild.id);
+    if (history.disabled || history.getSize() === 0) {
+      const embed = new EmbedBuilder()
+        .setColor(client.color)
+        .setDescription(":x: | Oynatılacak eski bir şarkı bulunamadı!")
 
-    try {
-      await queue.history.back();
-      return interaction.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor(client.color)
-            .setDescription('☑️ | Önceki şarkıya geri dönüldü.')
-        ], ephemeral: false
-      });
+      return interaction.reply({ embeds: [embed], ephemeral: true })
     }
 
-    catch (err) {
-      return interaction.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor(client.color)
-            .setDescription('❌ | Önceki şarkıya dönülürken bir hata oluştu.')
-        ], ephemeral: true
-      });
+    else {
+
+      const embed = new EmbedBuilder()
+        .setColor(client.color)
+        .setDescription("⏮ | Eski şarkı oynatılıyor.")
+
+      await history.previous();
+      return interaction.reply({ embeds: [embed], ephemeral: true })
+
     }
 
   }

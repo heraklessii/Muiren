@@ -81,6 +81,7 @@ module.exports = async (client) => {
 
             const nowplay = await queue.metadata.channel.send({ content: `**__Şarkı Listesi:__**\n${list}`, embeds: [Embed], components: [row] })
             const collector = nowplay.createMessageComponentCollector({ time: track.durationMS });
+            queue.metadata.nowplayMessage = nowplay;
 
             collector.on('collect', async (interaction) => {
 
@@ -132,6 +133,21 @@ module.exports = async (client) => {
 
                     if (queue.tracks.size < 1) {
 
+                        if (queue.repeatMode === 3) {
+
+                            const embed = new EmbedBuilder()
+                                .setColor(client.color)
+                                .setDescription("⏭ | Şarkı başarıyla atlandı.")
+
+                            const nowplay = queue.metadata.nowplayMessage;
+                            if (nowplay) queue.metadata.nowplayMessage = null;
+                            queue.node.skip()
+                            nowplay.delete();
+                            collector.stop();
+                            return interaction.reply({ embeds: [embed], ephemeral: true })
+
+                        }
+
                         const embed = new EmbedBuilder()
                             .setColor(client.color)
                             .setDescription(":x: | Sırada atlanacak hiçbir şarkı yok.")
@@ -154,6 +170,8 @@ module.exports = async (client) => {
                         .setColor(client.color)
                         .setDescription("⏭ | Şarkı başarıyla atlandı.")
 
+                    const nowplay = queue.metadata.nowplayMessage;
+                    if (nowplay) queue.metadata.nowplayMessage = null;
                     queue.node.skip()
                     nowplay.delete();
                     collector.stop();
@@ -181,26 +199,58 @@ module.exports = async (client) => {
                         queue.connection?.disconnect();
                     }
 
-                    if (queue.repeatMode === QueueRepeatMode.OFF) {
+                    if (queue.repeatMode === 0) {
 
                         queue.setRepeatMode(1);
                         const embed = new EmbedBuilder()
                             .setColor(client.color)
-                            .setDescription(`🔁 | Şarkı tekrar modu aktif edildi.`)
+                            .setDescription(`🔁 | **Şarkı tekrar modu** aktif edildi.`)
 
                         interaction.reply({ embeds: [embed], ephemeral: true })
 
                     }
 
-                    else {
+                    else if (queue.repeatMode === 1) {
+
+                        if (queue.tracks.size < 1) {
+
+                            queue.setRepeatMode(3);
+                            const embed = new EmbedBuilder()
+                                .setColor(client.color)
+                                .setDescription(`🔁 | **Otomatik oynatma** açıldı.`)
+
+                            return interaction.reply({ embeds: [embed], ephemeral: true })
+
+                        }
+
+                        queue.setRepeatMode(2);
+                        const embed = new EmbedBuilder()
+                            .setColor(client.color)
+                            .setDescription(`🔁 | **Liste tekrar modu** açıldı.`)
+
+                        interaction.reply({ embeds: [embed], ephemeral: true })
+
+                    }
+
+                    else if (queue.repeatMode === 2) {
+
+                        queue.setRepeatMode(3);
+                        const embed = new EmbedBuilder()
+                            .setColor(client.color)
+                            .setDescription(`🔁 | **Otomatik oynatma** açıldı.`)
+
+                        return interaction.reply({ embeds: [embed], ephemeral: true })
+
+                    }
+
+                    else if (queue.repeatMode === 3) {
 
                         queue.setRepeatMode(0);
                         const embed = new EmbedBuilder()
                             .setColor(client.color)
-                            .setDescription(`🔁 | Şarkı tekrar modu kapatıldı.`)
+                            .setDescription(`🔁 | **Tekrar modu** kapatıldı.`)
 
-                        interaction.reply({ embeds: [embed], ephemeral: true })
-
+                        return interaction.reply({ embeds: [embed], ephemeral: true })
                     }
 
                 }
@@ -238,9 +288,15 @@ module.exports = async (client) => {
             });
 
             collector.on('end', (_, reason) => {
-                if (reason === "time") nowplay.delete().catch(() => { });
-            });
 
+                if (queue.metadata.nowplayMessage) {
+                    queue.metadata.nowplayMessage = null;
+                    nowplay.delete().catch(() => { });
+                }
+
+                queue?.delete();
+
+            });
 
         }
 
@@ -248,6 +304,8 @@ module.exports = async (client) => {
 
     player.events.on('audioTrackAdd', async (queue, track) => {
 
+        const nowplay = queue.metadata.nowplayMessage;
+        if (nowplay) update(queue, nowplay)
         UpdateQueueMsg(queue)
 
         const setting = await MusicSetting.findOne({ guildId: queue.guild.id });
@@ -266,12 +324,15 @@ module.exports = async (client) => {
     });
 
     player.events.on('audioTracksAdd', async (queue, track) => {
+        const nowplay = queue.metadata.nowplayMessage;
+        if (nowplay) update(queue, nowplay)
         return UpdateQueueMsg(queue);
     });
 
     // Kanal boşsa otomatik ayrılma
     player.events.on('emptyChannel', async (queue) => {
-
+        const nowplay = queue.metadata.nowplayMessage;
+        if (nowplay) queue.metadata.nowplayMessage = null;
         UpdateMusic(queue)
         const Embed = new EmbedBuilder()
             .setColor(client.color)
@@ -285,6 +346,8 @@ module.exports = async (client) => {
 
     // Kuyruk sona erdiğinde, 1 dakika içinde yeni parça eklenmezse kanaldan çıkma
     player.events.on('emptyQueue', (queue) => {
+        const nowplay = queue.metadata.nowplayMessage;
+        if (nowplay) queue.metadata.nowplayMessage = null;
         UpdateMusic(queue)
         setTimeout(() => {
             if (!queue.node.isPlaying()) {
@@ -300,18 +363,26 @@ module.exports = async (client) => {
     });
 
     player.events.on('disconnect', (queue) => {
+        const nowplay = queue.metadata.nowplayMessage;
+        if (nowplay) queue.metadata.nowplayMessage = null;
         return UpdateMusic(queue)
     })
 
+    player.events.on('playerResume', (queue) => {
+        const nowplay = queue.metadata.nowplayMessage;
+        if (nowplay) update(queue, nowplay)
+        return UpdateQueueMsg(queue)
+    })
+
     player.events.on('connectionDestroyed', (queue) => {
+        const nowplay = queue.metadata.nowplayMessage;
+        if (nowplay) queue.metadata.nowplayMessage = null;
         return UpdateMusic(queue)
     })
 
     player.events.on('playerPause', (queue) => {
-        return UpdateQueueMsg(queue);
-    })
-
-    player.events.on('playerResume', (queue) => {
+        const nowplay = queue.metadata.nowplayMessage;
+        if (nowplay) update(queue, nowplay)
         return UpdateQueueMsg(queue);
     })
 
@@ -366,4 +437,65 @@ async function checks(interaction, queue, djRoleID) {
     }
 
     return voiceChannel;
+}
+
+async function update(queue) {
+
+    const nowplay = queue.metadata.nowplayMessage;
+    if (!nowplay) return;
+
+    const tracksArray = typeof queue.tracks.toArray === 'function'
+        ? queue.tracks.toArray()
+        : queue.tracks;
+
+    const list = tracksArray
+        .map((t, i) => `*\`${i + 1} • ${t.title} • [${t.duration}]\`* • ${t.requestedBy}`)
+        .slice(0, 5)
+        .join('\n') || 'Sırada başka şarkı yok.';
+
+    const track = queue.currentTrack;
+    const progress = queue.node.createProgressBar({ size: 45 });
+    const status = queue.node.isPaused() ? "⏸️ |" : "🔴 |";
+
+    const Embed = new EmbedBuilder()
+        .setAuthor({
+            name: queue.node.isPaused() ? 'Şarkı durduruldu...' : 'Oynatılıyor...',
+            iconURL: "https://cdn.discordapp.com/emojis/741605543046807626.gif"
+        })
+        .setImage(track.thumbnail)
+        .setColor(client.color)
+        .setDescription(`**[${track.title}](${track.url})**`)
+        .addFields({ name: `Oynatan Kişi:`, value: `${track.requestedBy}`, inline: true })
+        .addFields({ name: `Mevcut Ses:`, value: `**%${queue.node.volume}**`, inline: true })
+        .addFields({ name: `Toplam Süre:`, value: `${track.duration}`, inline: true })
+        .addFields({
+            name: `Mevcut Süre: \`[${queue.node.getTimestamp().current.label} / ${track.duration}]\``,
+            value: `\`\`\`${status} ${progress}\`\`\``,
+            inline: false
+        });
+
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId('pause')
+            .setEmoji('⏯️')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('previous')
+            .setEmoji('⬅️')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('stop')
+            .setEmoji('⏹')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('skip')
+            .setEmoji('➡️')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('loop')
+            .setEmoji('🔄')
+            .setStyle(ButtonStyle.Secondary)
+    );
+
+    return nowplay.edit({ content: `**__Şarkı Listesi:__**\n${list}`, embeds: [Embed], components: [row] });
 }

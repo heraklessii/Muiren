@@ -14,7 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 const client = global.client;
-const { useQueue, useMainPlayer, QueryType } = require('discord-player');
+const { useQueue, useMainPlayer, QueryType, useHistory } = require('discord-player');
 const {
     EmbedBuilder, InteractionType, UserSelectMenuBuilder, StringSelectMenuBuilder,
     Events, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, PermissionsBitField
@@ -84,25 +84,25 @@ module.exports = {
                     const voiceChannel = await checks(interaction, queue, djRoleID);
                     if (!voiceChannel) return;
 
-                    if (!queue.history.length)
-                        return interaction.reply({
-                            embeds: [
-                                new EmbedBuilder()
-                                    .setColor(client.color)
-                                    .setDescription('❌ | Önceki şarkı yok.')
-                            ], ephemeral: true
-                        });
+                    const history = useHistory(interaction.guild.id);
+                    if (history.disabled || history.getSize() === 0) {
+                        const embed = new EmbedBuilder()
+                            .setColor(client.color)
+                            .setDescription(":x: | Oynatılacak eski bir şarkı bulunamadı!")
 
-                    await queue.previous();
-                    UpdateQueueMsg(queue);
+                        return interaction.reply({ embeds: [embed], ephemeral: true })
+                    }
 
-                    return interaction.reply({
-                        embeds: [
-                            new EmbedBuilder()
-                                .setColor(client.color)
-                                .setDescription('⬅️ | Önceki şarkıya geçildi.')
-                        ], ephemeral: true
-                    });
+                    else {
+
+                        const embed = new EmbedBuilder()
+                            .setColor(client.color)
+                            .setDescription("⏮ | Eski şarkı oynatılıyor.")
+
+                        await history.previous();
+                        return interaction.reply({ embeds: [embed], ephemeral: true })
+
+                    }
 
                 }
 
@@ -112,7 +112,18 @@ module.exports = {
                     const check = await checks(interaction, queue);
                     if (!check) return;
 
-                    if (queue.tracks.size < 1)
+                    if (queue.tracks.size < 1) {
+
+                        if (queue.repeatMode === 3) {
+
+                            const embed = new EmbedBuilder()
+                                .setColor(client.color)
+                                .setDescription("➡️ | Şarkı başarıyla atlandı.")
+
+                            return interaction.reply({ embeds: [embed], ephemeral: true })
+
+                        }
+
                         return interaction.reply({
                             embeds: [
                                 new EmbedBuilder()
@@ -120,6 +131,7 @@ module.exports = {
                                     .setDescription('❌ | Atlanacak şarkı yok.')
                             ], ephemeral: true
                         });
+                    }
 
                     if (queue.repeatMode === 1)
                         return interaction.reply({
@@ -137,7 +149,7 @@ module.exports = {
                         embeds: [
                             new EmbedBuilder()
                                 .setColor(client.color)
-                                .setDescription('➡️ | Şarkı atlandı.')
+                                .setDescription('➡️ | Şarkı başarıyla atlandı.')
                         ], ephemeral: true
                     });
 
@@ -207,20 +219,54 @@ module.exports = {
                         queue.setRepeatMode(1);
                         return interaction.reply({
                             embeds: [new EmbedBuilder()
-                                .setColor('Green')
-                                .setDescription('🔁 | Tekrar modu açıldı.')
+                                .setColor(client.color)
+                                .setDescription('🔁 | **Şarkı tekrar modu** açıldı.')
                             ], ephemeral: true
                         });
                     }
 
                     else if (mode === 1) {
 
+                        if (queue.tracks.size < 1) {
+
+                            queue.setRepeatMode(3);
+                            const embed = new EmbedBuilder()
+                                .setColor(client.color)
+                                .setDescription(`🔁 | **Otomatik oynatma** açıldı.`)
+
+                            return interaction.reply({ embeds: [embed], ephemeral: true })
+
+                        }
+
+                        queue.setRepeatMode(2);
+                        return interaction.reply({
+                            embeds: [
+                                new EmbedBuilder()
+                                    .setColor(client.color)
+                                    .setDescription('🔁 | **Liste tekrar modu** açıldı.')
+                            ], ephemeral: true
+                        });
+                    }
+
+                    else if (mode === 2) {
+
+                        queue.setRepeatMode(3);
+                        return interaction.reply({
+                            embeds: [
+                                new EmbedBuilder()
+                                    .setColor(client.color)
+                                    .setDescription('🔁 | **Otomatik oynatma** açıldı.')
+                            ], ephemeral: true
+                        });
+                    }
+
+                    else if (mode === 3) {
                         queue.setRepeatMode(0);
                         return interaction.reply({
                             embeds: [
                                 new EmbedBuilder()
-                                    .setColor('Green')
-                                    .setDescription('🔁 | Tekrar modu kapatıldı.')
+                                    .setColor(client.color)
+                                    .setDescription('🔁 | **Tekrar modu** kapatıldı.')
                             ], ephemeral: true
                         });
                     }

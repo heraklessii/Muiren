@@ -43,6 +43,25 @@ module.exports = {
 
     if (queue.tracks.size < 1) {
 
+      if (queue.repeatMode === 3) {
+
+        try {
+          queue.node.skip();
+          const success = new EmbedBuilder()
+            .setColor(client.color)
+            .setDescription('☑️ | Başarıyla oynatılan şarkıyı atladım!');
+          return interaction.reply({ embeds: [success] });
+        }
+
+        catch (err) {
+          const fail = new EmbedBuilder()
+            .setColor(client.color)
+            .setDescription('❌ | Şarkı atlarken bir hata oluştu.');
+          return interaction.reply({ embeds: [fail], ephemeral: true });
+        }
+
+      }
+
       const embed = new EmbedBuilder()
         .setColor(client.color)
         .setDescription(":x: | Sırada atlanacak hiçbir şarkı yok.")

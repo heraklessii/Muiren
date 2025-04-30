@@ -50,28 +50,74 @@ module.exports = {
     if (!voiceChannel) return;
 
     const seçenek = interaction.options.getString("mod");
-    let modeNum = 0;
-    let modeText = "Kapalı";
+    let modeNum;
 
     switch (seçenek) {
+      case "kapat":
+        modeNum = 0;
+        break;
       case "şarkı":
         modeNum = 1;
-        modeText = "Şarkıyı Tekrarla";
         break;
       case "sıra":
         modeNum = 2;
-        modeText = "Sırayı Tekrarla";
         break;
     }
 
-    queue.setRepeatMode(modeNum);
+    if (modeNum === 0) {
 
-    return interaction.reply({
-      embeds: [new EmbedBuilder()
-        .setColor(client.color)
-        .setDescription(`🔁 | Tekrar modu başarıyla \`${modeText}\` olarak ayarlandı.`)],
-      ephemeral: false
-    });
+      if (queue.repeatMode === 1 || queue.repeatMode === 2 || queue.repeatMode === 3) {
+
+        queue.setRepeatMode(0);
+        const embed = new EmbedBuilder()
+          .setColor(client.color)
+          .setDescription(`🔁 | **Tekrar modu** kapatıldı.`)
+
+        return interaction.reply({ embeds: [embed], ephemeral: true })
+
+      }
+
+    }
+
+    else if (modeNum === 1) {
+
+      if (queue.repeatMode === 0 || queue.repeatMode === 2 || queue.repeatMode === 3) {
+
+        queue.setRepeatMode(1);
+        const embed = new EmbedBuilder()
+          .setColor(client.color)
+          .setDescription(`🔁 | **Şarkı tekrar modu** aktif edildi.`)
+
+        interaction.reply({ embeds: [embed], ephemeral: true })
+
+      }
+
+    }
+
+    else if (modeNum === 2) {
+
+      if (queue.tracks.size < 1) {
+
+        const embed = new EmbedBuilder()
+          .setColor(client.color)
+          .setDescription(`:x: | Listede başka şarkı olmadığı için **Sıra** tekrar modu açılamaz.`)
+
+        return interaction.reply({ embeds: [embed], ephemeral: true })
+
+      }
+
+      if (queue.repeatMode === 0 || queue.repeatMode === 1 || queue.repeatMode === 3) {
+
+        queue.setRepeatMode(2);
+        const embed = new EmbedBuilder()
+          .setColor(client.color)
+          .setDescription(`🔁 | **Liste tekrar modu** aktif edildi.`)
+
+        interaction.reply({ embeds: [embed], ephemeral: true })
+
+      }
+
+    }
 
   }
 };

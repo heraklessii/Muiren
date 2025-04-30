@@ -69,6 +69,16 @@ module.exports = {
 
     }
 
+    if (queue.repeatMode === 3) {
+
+      const embed = new EmbedBuilder()
+        .setColor(client.color)
+        .setDescription(":x: | **Otomatik oynatma** açık olduğu için atlayamıyorum.")
+
+      return interaction.reply({ embeds: [embed], ephemeral: true })
+
+    }
+
     try {
 
       queue.node.skipTo(miktar);

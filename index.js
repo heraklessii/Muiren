@@ -17,6 +17,7 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, Collection, Events, ActionRowBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Player } = require('discord-player');
 const { SpotifyExtractor } = require("discord-player-spotify");
+const { SoundcloudExtractor } = require("discord-player-soundcloud");
 const { YoutubeiExtractor } = require("discord-player-youtubei");
 const fs = require('node:fs');
 
@@ -33,15 +34,18 @@ const client = new Client({
 global.client = client;
 client.commands = new Collection();
 client.cooldowns = new Collection();
-client.color = "#2b2d32";
+
+// Genel embed renkleri.
+client.color = "#cf93ff";
 client.red = "#FC6161";
 client.green = "#73D673";
-client.white = "#FFFFFF";
-client.black = "#000001";
-client.blue = "#449afe";
-client.yellow = "#FFD700";
 
 const player = new Player(client, {
+  // Şarkı bilgilerini Soundcloud üzerinden almayı engeller ancak stream yapabilir.
+  // Eğer Soundcloud üzerinden stream yapılmamasını istiyorsanız aşağıya da eklemelisiniz.
+  blockExtractors: [SoundcloudExtractor],
+  blockStreamFrom: [/*SoundcloudExtractor*/],
+  // Buradaki ayarlara dokunmanızı önermem, şu anki hâli ile ses kalitesi oldukça iyi.
   smoothVolume: true,
   ytdlOptions: {
     filter: 'audioonly',
@@ -51,12 +55,20 @@ const player = new Player(client, {
   }
 });
 
+// Bu kısımdan register edilip edilmemesini ayarlayabilirsiniz.
+// Spotify bilgilerinizi ayarlarsanız daha iyi sonuçlar alabilirsiniz.
+// https://developer.spotify.com
+// UNUTMAYIN! Eğer Youtube veya Soundcloud koymazsanız stream yapamazsınız.
+// Direkt olarak Spotify üzerinden maalesef yayın yapılamıyor.
+// https://www.npmjs.com/package/discord-player-spotify
+// Sadece metada olarak kullanabilirsiniz.
 (async () => {
   await player.extractors.register(SpotifyExtractor, {
     clientId: process.env.SPOTIFY_ID ?? null,
     clientSecret: process.env.SPOTIFY_SECRET ?? null
   });
   await player.extractors.register(YoutubeiExtractor);
+  await player.extractors.register(SoundcloudExtractor);
 })();
 
 require("./utils/player.js")(client);
@@ -71,6 +83,8 @@ fs.readdirSync('./handlers').forEach(handler => {
 
 client.login(process.env.TOKEN);
 
+// Buradaki uyarılar önemli şeyler değil ancak yer kaplıyor.
+// Bu yüzden gizlemeyi tercih ettim. Dilerseniz buradaki satırları silebilirsiniz.
 const originalWarn = console.warn;
 console.warn = (...args) => {
   // Yalnızca “[YOUTUBEJS]” ile başlayan uyarıları yoksay

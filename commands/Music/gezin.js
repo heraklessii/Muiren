@@ -14,6 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { UpdateQueueMsg, update } = require("../../utils/musicUpdater");
 const { useQueue } = require('discord-player');
 const MusicSetting = require("../../models/MusicSetting");
 
@@ -21,23 +22,18 @@ module.exports = {
   category: "Music",
   cooldown: 5,
   data: new SlashCommandBuilder()
-    .setName('ileri-sar')
-    .setDescription('Şarkıyı belirttiğiniz saniye kadar ileri sararsınız.')
-    .addIntegerOption(option =>
+    .setName('gezin')
+    .setDescription('Şarkıda belirttiğiniz yere atlarsınız.')
+    .addStringOption(option =>
       option
         .setName('süre')
-        .setDescription('İleri sarmak istediğiniz saniye cinsinden süre.')
-        .setRequired(true)
-        .setMinValue(1)
-        .setMaxValue(600)
-    ),
+        .setDescription('Şarkının atlamak istediğiniz kısmı. (Örn: 1sn, 1dk, 1sa)')
+        .setRequired(true)),
 
   run: async (client, interaction) => {
 
-    return;
-
     let queue = useQueue(interaction.guild.id);
-    if (!queue || !queue.node.isPlaying()) {
+    if (!queue) {
       const noSong = new EmbedBuilder()
         .setColor(client.color)
         .setDescription('❌ | Şu anda hiçbir müzik oynatılmıyor.');
@@ -51,27 +47,29 @@ module.exports = {
     const voiceChannel = await checks(interaction, queue, djRoleID);
     if (!voiceChannel) return;
 
-    const seconds = interaction.options.getInteger('süre');
-    const { current, end } = queue.node.getTimestamp();
-    const currentMs = current * 1000;
-    const endMs = end * 1000;
-    const newPositionMs = Math.min(currentMs + seconds * 1000, endMs);
+    const süre = msFunc(interaction.options.getString('süre'));
+    if (süre === null) {
+      return interaction.reply({ content: '❌ | Geçerli bir süre girmelisin. (Örn: 1sn, 1dk, 1sa)', ephemeral: true });
+    }
 
     try {
+      await queue.node.seek(süre);
+      UpdateQueueMsg(queue)
+      if (queue.metadata.nowplayMessage) await update(queue);
 
-      await queue.node.seek(newPositionMs);
       const success = new EmbedBuilder()
         .setColor(client.color)
-        .setDescription(`☑️ | Şarkıyı **${seconds}** saniye ileri sardım.`);
+        .setDescription(`☑️ | Şarkının ${interaction.options.getString('süre')} kısmına gelindi.`);
 
       return interaction.reply({ embeds: [success] });
 
-    }
-
+    } 
+    
     catch (err) {
+
       const fail = new EmbedBuilder()
         .setColor(client.color)
-        .setDescription('❌ | Şarkıyı ileri sararken bir hata oluştu.');
+        .setDescription('❌ | Şarkıda gezinirken bir hata oluştu.');
 
       return interaction.reply({ embeds: [fail], ephemeral: true });
 
@@ -81,7 +79,6 @@ module.exports = {
 };
 
 async function checks(interaction, queue, djRoleID) {
-
   const voiceChannel = interaction.member.voice.channel;
   if (!voiceChannel) {
     await interaction.reply({ content: '❌ | Ses kanalında değilsiniz.', ephemeral: true });
@@ -103,4 +100,25 @@ async function checks(interaction, queue, djRoleID) {
   }
 
   return voiceChannel;
+}
+
+// msFunc: "sn", "dk", "sa" formatındaki süreyi milisaniyeye çevirir.
+function msFunc(timeStr) {
+  if (typeof timeStr !== 'string') return null;
+  timeStr = timeStr.trim().toLowerCase();
+
+  const unit = timeStr.slice(-2);
+  const value = parseFloat(timeStr.slice(0, -2));
+  if (isNaN(value)) return null;
+
+  switch (unit) {
+    case 'sn': // saniye
+      return value * 1000;
+    case 'dk': // dakika
+      return value * 60 * 1000;
+    case 'sa': // saat
+      return value * 60 * 60 * 1000;
+    default:
+      return null;
+  }
 }

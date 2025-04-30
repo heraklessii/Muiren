@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <a href="https://github.com/heraklessii"><img src="https://media.discordapp.net/attachments/1322565611896963123/1365112651088396330/tsumi.png?ex=680c1fba&is=680ace3a&hm=cfb5e33062cba68ff35a12ae7213bfd0b894d2be30744c0d91aceebebede4e96&=&format=webp&quality=lossless&width=872&height=872" height="200" alt="Discord.js v14 Music Bot"></a>
+  <a href="https://github.com/heraklessii"><img src="https://images-ext-1.discordapp.net/external/9HXJKuf1w11StBIvbtHobmLAWNvvNb6k8hzWcltda6c/%3Fsize%3D1024/https/cdn.discordapp.com/avatars/1201831188927614996/f6395b2d4d82f3c40a3f332076778931.png?format=webp&quality=lossless&width=858&height=858" height="200" alt="Discord.js v14 Music Bot"></a>
   <br>
    Muiren | Discord.js v14 Music Bot
   <br>

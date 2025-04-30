@@ -6,7 +6,7 @@
   <br>
 </h1>
 
-# Muiren Bot ♪
+<br>
 
 - **YouTube & SoundCloud Desteği:** URL veya arama terimi girerek anında müzik oynatma.
 - **Menülü Müzik Sistemi:** `/sistemi-kur` komutuyla etkileşimli menüyü dilediğiniz kanala kurun.
@@ -14,6 +14,8 @@
 - **MongoDB Desteği:** Tüm ayarlar ve veriler MongoDB üzerinde güvenle saklanır.
 - **Hata Yakalama:** Gelişmiş Error Handler ile bot çökme senaryoları minimize edilir.
 - **Collector Menü:** Sistem kurulmasa bile buton tabanlı oynatma kontrolü.
+
+<br>
 
 ## 🚀 Komutlar 
 
@@ -48,10 +50,14 @@
 - `/yardım`: Mevcut butün komutları görebilirsiniz.
 - `/eval`: Sadece developer kullanabilir.
 
+<br>
+
 ## 🔗 Bağlantılar
 
 - 🤝 [**Destek Sunucusu**](https://discord.gg/tsumi)  
 - 📦 [**GitHub**](https://github.com/heraklessii/Muiren)  
+
+<br>
 
 ## 🚀 Kurulum
 
@@ -71,11 +77,14 @@
    ```bash
    node .
    ```
+<br>
 
 ## 🙌 Katkı
 
 - **heraklessii** — Proje sahibi & ana geliştirici  
 - Katkı sağlamak için *pull request* veya *issue* açabilirsiniz.  
+
+<br>
 
 ## 📜 Lisans
 

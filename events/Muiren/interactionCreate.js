@@ -16,7 +16,7 @@
 const client = global.client;
 const { useQueue, useMainPlayer, QueryType, useHistory } = require('discord-player');
 const { UpdateQueueMsg, UpdateMusic } = require("../../utils/musicUpdater");
-const { EmbedBuilder, InteractionType, Events } = require("discord.js");
+const { EmbedBuilder, InteractionType, Events, PermissionsBitField } = require("discord.js");
 const MusicSetting = require("../../models/MusicSetting");
 const cooldowns = new Map();
 

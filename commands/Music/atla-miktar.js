@@ -69,7 +69,7 @@ module.exports = {
 
     }
 
-    if (queue.repeatMode === 3) {
+    else if (queue.repeatMode === 3) {
 
       const embed = new EmbedBuilder()
         .setColor(client.color)

@@ -134,22 +134,17 @@ module.exports = async (client) => {
                         if (queue.tracks.size < 1) {
 
                             if (queue.repeatMode === 3) {
+
                                 const embed = new EmbedBuilder()
                                     .setColor(client.color)
-                                    .setDescription("⏭ | Şarkı başarıyla atlandı.");
-
-                                if (queue.metadata.nowplayMessage) queue.metadata.nowplayMessage = null;
-                                if (queue.metadata.collector) queue.metadata.collector = null;
-                                queue.node.skip();
-                                nowplay.delete();
-                                collector.stop();
+                                    .setDescription("❌ | **Otomatik oynatma** açık olduğu için atlayamıyorum.")
 
                                 return await interaction.reply({ embeds: [embed], ephemeral: true });
                             }
 
                             const embed = new EmbedBuilder()
                                 .setColor(client.color)
-                                .setDescription(":x: | Sırada atlanacak hiçbir şarkı yok.");
+                                .setDescription("❌ | Sırada atlanacak hiçbir şarkı yok.");
 
                             return await interaction.reply({ embeds: [embed], ephemeral: true });
 

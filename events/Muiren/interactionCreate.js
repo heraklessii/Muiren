@@ -115,7 +115,7 @@ module.exports = {
 
                             const embed = new EmbedBuilder()
                                 .setColor(client.color)
-                                .setDescription("➡️ | Şarkı başarıyla atlandı.")
+                                .setDescription("❌ | **Oto oynatma** açık olduğu için şarkı atlanmıyor.")
 
                             return interaction.reply({ embeds: [embed], ephemeral: true })
 

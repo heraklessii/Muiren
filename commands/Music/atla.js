@@ -45,20 +45,10 @@ module.exports = {
 
       if (queue.repeatMode === 3) {
 
-        try {
-          queue.node.skip();
-          const success = new EmbedBuilder()
-            .setColor(client.color)
-            .setDescription('☑️ | Başarıyla oynatılan şarkıyı atladım!');
-          return interaction.reply({ embeds: [success] });
-        }
-
-        catch (err) {
-          const fail = new EmbedBuilder()
-            .setColor(client.color)
-            .setDescription('❌ | Şarkı atlarken bir hata oluştu.');
-          return interaction.reply({ embeds: [fail], ephemeral: true });
-        }
+        const success = new EmbedBuilder()
+          .setColor(client.color)
+          .setDescription("❌ | **Oto oynatma** açık olduğu için şarkı atlanmıyor.")
+        return interaction.reply({ embeds: [success] });
 
       }
 
@@ -91,7 +81,7 @@ module.exports = {
         queue.metadata.collector.stop();
         queue.metadata.collector = null;
       }
-      
+
       queue.node.skip();
       const success = new EmbedBuilder()
         .setColor(client.color)

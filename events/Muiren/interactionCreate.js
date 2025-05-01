@@ -106,7 +106,7 @@ module.exports = {
                 case 'sskip': {
 
                     // ---- İzin Kontrolleri ---- //
-                    const check = await checks(interaction, queue);
+                    const check = await checks(interaction, queue, djRoleID);
                     if (!check) return;
 
                     if (queue.tracks.size < 1) {
@@ -155,7 +155,7 @@ module.exports = {
                 case 'sstop': {
 
                     // ---- İzin Kontrolleri ---- //
-                    const voiceChannel = await checks(interaction, queue);
+                    const voiceChannel = await checks(interaction, queue, djRoleID);
                     if (!voiceChannel) return;
 
                     queue.delete();
@@ -175,7 +175,7 @@ module.exports = {
                 case 'spause': {
 
                     // ---- İzin Kontrolleri ---- //
-                    const voiceChannel = await checks(interaction, queue);
+                    const voiceChannel = await checks(interaction, queue, djRoleID);
                     if (!voiceChannel) return;
 
                     if (queue.node.isPaused()) {
@@ -207,7 +207,7 @@ module.exports = {
                 case 'sloop': {
 
                     // ---- İzin Kontrolleri ---- //
-                    const voiceChannel = await checks(interaction, queue);
+                    const voiceChannel = await checks(interaction, queue, djRoleID);
                     if (!voiceChannel) return;
 
                     const mode = queue.repeatMode;

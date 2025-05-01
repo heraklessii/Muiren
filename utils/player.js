@@ -133,15 +133,6 @@ module.exports = async (client) => {
 
                         if (queue.tracks.size < 1) {
 
-                            if (queue.repeatMode === 3) {
-
-                                const embed = new EmbedBuilder()
-                                    .setColor(client.color)
-                                    .setDescription("❌ | **Otomatik oynatma** açık olduğu için atlayamıyorum.")
-
-                                return await interaction.reply({ embeds: [embed], ephemeral: true });
-                            }
-
                             const embed = new EmbedBuilder()
                                 .setColor(client.color)
                                 .setDescription("❌ | Sırada atlanacak hiçbir şarkı yok.");
@@ -154,6 +145,15 @@ module.exports = async (client) => {
                             const embed = new EmbedBuilder()
                                 .setColor(client.color)
                                 .setDescription(":x: | Tekrar modu açık olduğu için atlayamıyorum.");
+                            return await interaction.reply({ embeds: [embed], ephemeral: true });
+                        }
+
+                        else if (queue.repeatMode === 3) {
+
+                            const embed = new EmbedBuilder()
+                                .setColor(client.color)
+                                .setDescription("❌ | **Otomatik oynatma** açık olduğu için atlayamıyorum.")
+
                             return await interaction.reply({ embeds: [embed], ephemeral: true });
                         }
 

@@ -43,15 +43,6 @@ module.exports = {
 
     if (queue.tracks.size < 1) {
 
-      if (queue.repeatMode === 3) {
-
-        const success = new EmbedBuilder()
-          .setColor(client.color)
-          .setDescription("❌ | **Oto oynatma** açık olduğu için şarkı atlanmıyor.")
-        return interaction.reply({ embeds: [success] });
-
-      }
-
       const embed = new EmbedBuilder()
         .setColor(client.color)
         .setDescription("❌ | Sırada atlanacak hiçbir şarkı yok.")
@@ -67,6 +58,15 @@ module.exports = {
         .setDescription("❌ | **Şarkı tekrar modu** açık olduğu için atlayamıyorum.")
 
       return interaction.reply({ embeds: [embed], ephemeral: true })
+
+    }
+
+    else if (queue.repeatMode === 3) {
+
+      const success = new EmbedBuilder()
+        .setColor(client.color)
+        .setDescription("❌ | **Oto oynatma** açık olduğu için şarkı atlanmıyor.")
+      return interaction.reply({ embeds: [success] });
 
     }
 

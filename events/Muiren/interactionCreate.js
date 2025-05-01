@@ -111,16 +111,6 @@ module.exports = {
 
                     if (queue.tracks.size < 1) {
 
-                        if (queue.repeatMode === 3) {
-
-                            const embed = new EmbedBuilder()
-                                .setColor(client.color)
-                                .setDescription("❌ | **Oto oynatma** açık olduğu için şarkı atlanmıyor.")
-
-                            return interaction.reply({ embeds: [embed], ephemeral: true })
-
-                        }
-
                         return interaction.reply({
                             embeds: [
                                 new EmbedBuilder()
@@ -138,6 +128,16 @@ module.exports = {
                                     .setDescription("❌ | Tekrar modu açık olduğu için atlayamıyorum.")
                             ], ephemeral: true
                         });
+
+                    else if (queue.repeatMode === 3) {
+
+                        const embed = new EmbedBuilder()
+                            .setColor(client.color)
+                            .setDescription("❌ | **Oto oynatma** açık olduğu için şarkı atlanmıyor.")
+
+                        return interaction.reply({ embeds: [embed], ephemeral: true })
+
+                    }
 
                     queue.node.skip();
                     UpdateQueueMsg(queue);

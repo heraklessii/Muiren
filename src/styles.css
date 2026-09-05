@@ -1,0 +1,2074 @@
+/*
+ * ============================================================================
+ * MUIREN — arayüz tasarım sistemi
+ * ============================================================================
+ *
+ * Tasarım dili Mui ailesinden birebir devralındı (kanonik kaynak
+ * `..\Muiget\src\styles.css`, jeton listesi `..\MuiLabs\docs\ui-conventions.md`):
+ * teal vurgu (#2dd4bf), koyu zemin (#0f1115), gömülü Outfit, Türkçe sınıf
+ * adları. Tahmin yok, kopyalandı.
+ *
+ * Kural: bileşen kodunda ASLA renk/ölçü sabiti yok (CLAUDE.md #9). Hepsi
+ * buradaki değişkenlerden geliyor.
+ *
+ * Bu jetonların bir kısmını kullanıcı teması değiştirebilecek (Faz 4); hangileri
+ * ve sınırları `docs/Temalar.md` içinde. Mui kimliği (ikon, hakkında ekranı)
+ * temadan etkilenmiyor.
+ */
+
+/* ---------------------------------------------------------------------------
+ * Font — Outfit
+ *
+ * Dosyalar uygulamaya GÖMÜLÜ, CDN yok: bir tarayıcının kendi kabuğu için ağa
+ * çıkması, açtığı ilk sayfadan önce bir istek yapması demek olurdu.
+ * `latin-ext` alt kümesi Türkçe için şart (ğ ş İ ı Ş Ğ).
+ * ------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: block;
+  src: url('./assets/fonts/outfit-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: block;
+  src: url('./assets/fonts/outfit-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ---------------------------------------------------------------------------
+ * Renk jetonları
+ * ------------------------------------------------------------------------- */
+
+:root,
+:root[data-theme='dark'] {
+  --bg: #0f1115;
+  --bg-panel: #181b22;
+  --bg-elevated: #20242d;
+  --bg-sunken: #0b0d11;
+  --border: #262b35;
+  --border-strong: #333a47;
+  --text: #e8eaed;
+  --text-muted: #8b93a3;
+
+  --accent: #2dd4bf;
+  --accent-strong: #5eead4;
+  --accent-soft: rgb(45 212 191 / 12%);
+  --accent-line: rgb(45 212 191 / 34%);
+  /* Teal AÇIK bir renk: üstündeki yazı koyu olmak zorunda. */
+  --on-accent: #04211d;
+
+  --error: #ff7a6b;
+  --warning: #fbbf24;
+  --ok: #a3e635;
+  --paused: #94a3b8;
+
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-2: 0 8px 24px -6px rgb(0 0 0 / 60%);
+  --shadow-3: 0 24px 64px -12px rgb(0 0 0 / 70%);
+
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --bg: #eef1f5;
+  --bg-panel: #ffffff;
+  --bg-elevated: #f2f4f8;
+  --bg-sunken: #e7eaf0;
+  --border: #dde1e9;
+  --border-strong: #c3c9d4;
+  --text: #12151a;
+  --text-muted: #5d6675;
+
+  /*
+   * Aynı teal açık zeminde okunmuyor; doygun/koyu ucu gerekiyor. Değer
+   * `teal-600` (#0d9488) DEĞİL daha koyu: `on-accent` beyaz olduğunda
+   * #0d9488 üstünde kontrast 3.74:1 çıkıyor ve WCAG AA eşiğinin altında
+   * kalıyor. `theme/mod.rs` içindeki "Kağıt" temasının kontrast testi bunu
+   * yakaladı; iki yer aynı değeri taşımak zorunda.
+   */
+  --accent: #0a6b62;
+  --accent-strong: #085850;
+  --accent-soft: rgb(10 107 98 / 10%);
+  --accent-line: rgb(10 107 98 / 30%);
+  --on-accent: #ffffff;
+
+  --error: #c0392b;
+  --warning: #b45309;
+  --ok: #4d7c0f;
+  --paused: #64748b;
+
+  --shadow-1: 0 1px 2px rgb(18 21 26 / 8%);
+  --shadow-2: 0 8px 24px -6px rgb(18 21 26 / 14%);
+  --shadow-3: 0 24px 64px -12px rgb(18 21 26 / 20%);
+
+  color-scheme: light;
+}
+
+/* ---------------------------------------------------------------------------
+ * Ölçek
+ * ------------------------------------------------------------------------- */
+
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 22px;
+  --space-6: 32px;
+
+  --font-ui: 'Outfit', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  --font-xs: 11px;
+  --font-sm: 12px;
+  --font-md: 13px;
+  --font-lg: 15px;
+  --font-xl: 19px;
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --control-height: 32px;
+
+  /* Kabuk kasıtlı olarak ince: iki satır (docs/Frontend.md). */
+  --serit-height: 38px;
+  --gezinme-height: 42px;
+
+  /* Sekme 240'tan başlıyor, sıkışınca 52'ye kadar daralıyor (favicon + ses
+     göstergesi), sonra şerit kaydırmaya geçiyor. Daha fazla daralma yok:
+     12 piksellik sekme kimseye yaramıyor (docs/Sekmeler.md). */
+  --sekme-max: 240px;
+  --sekme-min: 52px;
+
+  --ease: cubic-bezier(0.2, 0.6, 0.3, 1);
+  --t-fast: 110ms;
+  --t-med: 180ms;
+}
+
+/* ---------------------------------------------------------------------------
+ * Taban
+ * ------------------------------------------------------------------------- */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--font-md);
+  line-height: 1.5;
+  letter-spacing: 0.005em;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Arayüz kromu seçilemiyor ama BİLGİ olan metin kopyalanabilmeli. */
+.secilebilir,
+.adres__girdi,
+.arama__url {
+  user-select: text;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/*
+ * Boyutsuz bir `<svg>` varsayılan 300×150 çiziliyor ve bir satırın içinde
+ * yerleşimi ele geçiriyor. Taban burada; ihtiyaç duyan yer üzerine yazıyor.
+ */
+svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+/** Ekran okuyucuya görünür, göze görünmez. */
+.gorunmez {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Kabuk yerleşimi
+ * ------------------------------------------------------------------------- */
+
+.kabuk {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg);
+}
+
+/*
+ * Sekme webview'i tam olarak bu kutunun dikdörtgenine yerleşiyor
+ * (useIcerikAlani → icerik_alani komutu). Kutunun kendi zemini yalnız kabuk
+ * sayfası çizilirken görünüyor.
+ */
+.icerik {
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--bg);
+  position: relative;
+}
+
+/* ---------------------------------------------------------------------------
+ * Kontroller
+ * ------------------------------------------------------------------------- */
+
+.dugme {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-3);
+  min-height: var(--control-height);
+  font: inherit;
+  font-size: var(--font-md);
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.dugme:hover:not(:disabled) {
+  background: var(--bg-elevated);
+}
+
+.dugme:disabled {
+  color: var(--text-muted);
+  opacity: 0.45;
+  cursor: default;
+}
+
+.dugme--ikon {
+  width: var(--control-height);
+  padding: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Sekme şeridi
+ * ------------------------------------------------------------------------- */
+
+.serit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--serit-height);
+  padding: 0 var(--space-2);
+  background: var(--bg-sunken);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+
+.serit__liste {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 100%;
+  padding-top: var(--space-1);
+}
+
+.serit__liste::-webkit-scrollbar {
+  height: 0;
+}
+
+.serit__yeni {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+}
+
+.sekme {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  /* 240'tan başlıyor, 52'ye kadar daralıyor, sonra şerit kayıyor. */
+  flex: 1 1 var(--sekme-max);
+  max-width: var(--sekme-max);
+  min-width: var(--sekme-min);
+  padding: 0 var(--space-2);
+  padding-left: calc(var(--space-2) + var(--derinlik, 0) * 10px);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  color: var(--text);
+  cursor: default;
+  overflow: hidden;
+  /*
+   * Durum değişimi ANINDA. 50 sekmede aynı anda 30 geçiş animasyonu tam da
+   * kaçındığımız türden bir maliyet (docs/Frontend.md).
+   */
+  transition: none;
+}
+
+.sekme__ad {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-sm);
+}
+
+.sekme__isaret {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+  flex: 0 0 auto;
+}
+
+.sekme__sabit {
+  color: var(--accent);
+  display: flex;
+}
+
+.sekme__kapat,
+.sekme__ses {
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.sekme__kapat:hover,
+.sekme__ses:hover {
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+
+/* Sekme daralınca kapatma düğmesi yalnız etkin ve gezilen sekmede kalıyor;
+   52 pikselde her ikon sığmıyor. */
+@media (max-width: 900px) {
+  .sekme:not(.sekme--etkin):not(:hover) .sekme__kapat {
+    display: none;
+  }
+}
+
+.sekme--etkin {
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+}
+
+/* Etkin sekmenin üstünde vurgu çizgisi. */
+.sekme--etkin::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: var(--accent);
+}
+
+.sekme--etkin .sekme__isaret {
+  background: var(--accent);
+}
+
+/*
+ * Uyuyan soluk, atılmış daha soluk + kesikli kenarlık.
+ * Bu bir tanıtım öğesi değil, GÜVEN öğesi: kullanıcı neyin bellekte olduğunu
+ * bir bakışta görüyor (docs/Sekmeler.md).
+ */
+.sekme--uyuyan {
+  opacity: 0.6;
+}
+
+.sekme--uyuyan .sekme__isaret {
+  background: var(--paused);
+}
+
+.sekme--atilmis {
+  opacity: 0.4;
+  border-style: dashed;
+}
+
+.sekme--atilmis .sekme__isaret {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+}
+
+/* ---------------------------------------------------------------------------
+ * Gezinme çubuğu
+ * ------------------------------------------------------------------------- */
+
+.gezinme {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--gezinme-height);
+  padding: 0 var(--space-3);
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+
+.gezinme__dugmeler {
+  display: flex;
+  gap: 2px;
+  flex: 0 0 auto;
+  color: var(--text);
+}
+
+.adres {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--control-height);
+  /* Öneri listesi buna göre konumlanıyor (`.oneri`). */
+  position: relative;
+  padding: 0 var(--space-3);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+}
+
+.adres--duzenleniyor {
+  border-color: var(--accent-line);
+  background: var(--bg);
+}
+
+.adres__kilit {
+  display: flex;
+  flex: 0 0 auto;
+  width: 16px;
+}
+
+.adres__kilit--guvenli {
+  color: var(--text-muted);
+}
+
+/* Kilidin yokluğu yeterli değil; şifresiz bağlantı açıkça uyarılıyor. */
+.adres__kilit--acik {
+  color: var(--warning);
+}
+
+.adres__girdi {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--font-md);
+}
+
+.adres__gosterim {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--font-md);
+  cursor: text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/*
+ * Alan adı vurgusu bir GÜVENLİK özelliği: `banka.com.saldirgan.net`
+ * adresinde göze çarpması gereken `saldirgan.net` (docs/Frontend.md).
+ */
+.adres__alan {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.adres__soluk {
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------------------------
+ * Yeni sekme sayfası
+ * ------------------------------------------------------------------------- */
+
+.yeni {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.yeni__marka {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.yeni__marka h1 {
+  margin: 0;
+  font-size: var(--font-xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.yeni__form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: min(560px, 100%);
+  height: 44px;
+  padding: 0 var(--space-4);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+}
+
+.yeni__form:focus-within {
+  border-color: var(--accent-line);
+}
+
+.yeni__ikon {
+  color: var(--text-muted);
+  display: flex;
+}
+
+.yeni__girdi {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--font-lg);
+}
+
+.yeni__not,
+.yeni__alt {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+}
+
+.yeni__not code {
+  font-family: var(--font-mono);
+  font-size: var(--font-xs);
+}
+
+/* ---------------------------------------------------------------------------
+ * Sekme arama
+ * ------------------------------------------------------------------------- */
+
+.ortu {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 45%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+  z-index: 10;
+}
+
+.arama {
+  width: min(620px, 92vw);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  overflow: hidden;
+}
+
+.arama__satir {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.arama__girdi {
+  flex: 1 1 auto;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--font-lg);
+}
+
+.arama__liste {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2);
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.arama__oge {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.arama__oge--secili,
+.arama__oge:hover {
+  background: var(--accent-soft);
+}
+
+.arama__ad {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.arama__url {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+}
+
+.arama__bos {
+  padding: var(--space-4);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ---------------------------------------------------------------------------
+ * Rozetler ve duyuru
+ * ------------------------------------------------------------------------- */
+
+.rozet {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-xs);
+  font-weight: 500;
+  flex: 0 0 auto;
+}
+
+.rozet--uyku {
+  background: var(--bg-elevated);
+  color: var(--paused);
+}
+
+.duyuru {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-5);
+  transform: translateX(-50%);
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-2);
+  color: var(--text);
+  font-size: var(--font-sm);
+  z-index: 20;
+}
+
+/* ---------------------------------------------------------------------------
+ * Gövde: içerik + yan panel
+ *
+ * Yan panel açıldığında `.icerik` daralıyor ve `useIcerikAlani` yeni
+ * dikdörtgeni backend'e bildiriyor; sekme webview'i panelin altında kalmıyor
+ * (`docs/IPC.md`, `icerik_alani`).
+ * ------------------------------------------------------------------------- */
+
+.govde {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.govde > .icerik {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Pencere düğmeleri (kenarlıksız pencere)
+ *
+ * Ölçüler Windows'un kendi başlık çubuğundan: 46×32. Kapatma düğmesinin
+ * kırmızısı da sistemin — kullanıcı o rengi tanıyor ve başka bir renk
+ * "bu düğme kapatmıyor" hissi veriyor. Jeton listesinde bir "sistem kırmızısı"
+ * yok ve olmamalı: bu renk Mui kimliğinin değil Windows'un.
+ * ------------------------------------------------------------------------- */
+
+.pencere {
+  display: flex;
+  flex: 0 0 auto;
+  align-self: stretch;
+  margin-left: var(--space-1);
+}
+
+.pencere__dugme {
+  width: 46px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pencere__dugme:hover {
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+
+.pencere__dugme--kapat:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
+.serit__araclar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.dugme--acik {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.dugme--birincil {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.dugme--birincil:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+/*
+ * Sürükle-bırak: sürüklenen sekme soluyor, hedef sıranın soluna çizgi.
+ * Geçiş animasyonu YOK — 50 sekmede aynı anda 30 animasyon tam da
+ * kaçındığımız türden maliyet (`docs/Frontend.md`).
+ */
+.sekme--suruklenen {
+  opacity: 0.35;
+}
+
+.sekme--hedef {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* ---------------------------------------------------------------------------
+ * Yan panel
+ * ------------------------------------------------------------------------- */
+
+.yan {
+  flex: 0 0 300px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.yan__baslik {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+
+.yan__sekmeler {
+  display: flex;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.yan__sekme {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  min-height: 28px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--font-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.yan__sekme:hover {
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+
+.yan__sekme--etkin {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.yan__govde {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.yan__bos {
+  padding: var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+}
+
+/* ---------------------------------------------------------------------------
+ * Dikey sekme listesi
+ *
+ * Yatay şeritten farkı daralmıyor olması: 50 sekmede yatay şerit 52 piksele
+ * inip başlıkları yutuyor (`docs/Sekmeler.md`).
+ * ------------------------------------------------------------------------- */
+
+.dikey {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1);
+}
+
+.dikey__oge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  /* Ağaçtaki derinlik girinti oluyor; değer backend'den geliyor. */
+  padding: 0 var(--space-2) 0 calc(var(--space-2) + var(--derinlik, 0) * 12px);
+  min-height: 30px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text);
+}
+
+.dikey__oge:hover {
+  background: var(--bg-elevated);
+}
+
+.dikey__oge--etkin {
+  background: var(--accent-soft);
+}
+
+.dikey__isaret {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.dikey__oge--etkin .dikey__isaret {
+  background: var(--accent);
+}
+
+.dikey__oge--uyuyan {
+  opacity: 0.6;
+}
+
+.dikey__oge--atilmis {
+  opacity: 0.4;
+}
+
+.dikey__ad {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-sm);
+}
+
+.dikey__bosta {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.dikey__sabit {
+  flex: 0 0 auto;
+  color: var(--accent);
+  display: inline-flex;
+}
+
+.dikey__dugme {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dikey__dugme:hover {
+  background: var(--bg-sunken);
+  color: var(--text);
+}
+
+/* ---------------------------------------------------------------------------
+ * Bellek paneli — projenin vitrini
+ * ------------------------------------------------------------------------- */
+
+.bellek {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.bellek--bos {
+  align-items: center;
+  text-align: center;
+  color: var(--text-muted);
+  padding-top: var(--space-6);
+}
+
+.bellek__vitrin {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3);
+  background: var(--bg-sunken);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius);
+}
+
+.bellek__rakam {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--accent-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.bellek__etiket {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.bellek__ipucu {
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.bellek__dagilim {
+  margin: 0;
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.bellek__olcum,
+.bellek__baski {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.bellek__satir {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.bellek__satir b {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Uyanma gecikmesi — `docs/Bellek.md` kabul tablosunun iki satırı. */
+.bellek__gecikme {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* "henüz ölçülmedi" bir sonuç değil: rakam gibi görünmüyor. */
+.bellek__olculmedi {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* Hedefi aşan medyan. `--error` DEĞİL: hedef bir kabul kriteri, bir hata
+   değil — yavaş bir makinede tarayıcı bozukmuş gibi görünmemeli. */
+.bellek__hedef--asti {
+  color: var(--warning);
+}
+
+.bellek__sifirla {
+  align-self: flex-start;
+  min-height: auto;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+}
+
+.bellek__cubuk {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-sunken);
+  overflow: hidden;
+}
+
+.bellek__dolu {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+}
+
+.bellek__dolu--ok {
+  background: var(--accent);
+}
+
+.bellek__dolu--uyari {
+  background: var(--warning);
+}
+
+.bellek__dolu--hata {
+  background: var(--error);
+}
+
+.bellek__uyut {
+  width: 100%;
+}
+
+.bellek__liste {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-top: 1px solid var(--border);
+}
+
+.bellek__oge {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--font-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.bellek__oge:hover {
+  background: var(--bg-elevated);
+}
+
+.bellek__oge--uyuyan {
+  opacity: 0.7;
+}
+
+.bellek__oge--atilmis {
+  opacity: 0.5;
+}
+
+.bellek__ad {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bellek__yan {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.bellek__bosta {
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sekme başına ölçülen bellek. `tabular-nums` şart: liste tarandığında
+   rakamlar alt alta hizalanmazsa hangi sekmenin ağır olduğu görünmüyor ve
+   listenin tek işi o. */
+.bellek__mb {
+  color: var(--text);
+  font-size: var(--font-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Bu turda ölçülmemiş değer (atılmış sekme, uykuya dalmış süreç). Soluk ve
+   italik — `bellek__olculmedi` ile aynı dil: eski bir sayıyı bugünkü gibi
+   göstermek yok (`docs/Bellek.md`). */
+.bellek__mb--bayat {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ---------------------------------------------------------------------------
+ * Adres çubuğu önerileri
+ *
+ * Kaynak yalnız yerel geçmiş; arama motorunun canlı öneri API'si
+ * kullanılmıyor (`docs/Frontend.md`, karar #5).
+ * ------------------------------------------------------------------------- */
+
+.oneri {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.oneri__oge {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--font-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.oneri__oge--secili {
+  background: var(--accent-soft);
+}
+
+.oneri__ad {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.oneri__url {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+}
+
+/* ---------------------------------------------------------------------------
+ * Geçmiş paneli
+ * ------------------------------------------------------------------------- */
+
+.gecmis {
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.gecmis__ara {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-2);
+  min-height: var(--control-height);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+
+.gecmis__ara:focus-within {
+  border-color: var(--accent-line);
+}
+
+.gecmis__girdi {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--font-sm);
+  outline: none;
+}
+
+.gecmis__araclar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.gecmis__temizle {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.gecmis__aralik {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.gecmis__aralik .dugme {
+  font-size: var(--font-sm);
+  min-height: 26px;
+  border-color: var(--border);
+}
+
+.gecmis__liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.gecmis__satir {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.gecmis__oge {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--font-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.gecmis__oge:hover {
+  background: var(--bg-elevated);
+}
+
+.gecmis__ad {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gecmis__zaman {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------------
+ * Ayarlar ekranı
+ *
+ * Bellek eşikleri burada görünür ve ayarlanabilir. `docs/Bellek.md` bunu şart
+ * koşuyor: "Kullanıcı 'Sıkı' moddayken 3 GB kazanıp bunu görebilmeli."
+ * ------------------------------------------------------------------------- */
+
+.ayarlar {
+  width: min(620px, 92vw);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  overflow: hidden;
+}
+
+.ayarlar__baslik {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+
+.ayarlar__baslik h2 {
+  margin: 0;
+  font-size: var(--font-lg);
+  font-weight: 600;
+}
+
+/* Sessizce etkisiz kalan bir ayar, kullanıcıya "bu özellik çalışmıyor"
+   dedirtiyor (`docs/Depolama.md`). */
+.ayarlar__rozet {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--accent-line);
+  color: var(--accent-strong);
+  font-size: var(--font-sm);
+}
+
+.ayarlar__govde {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.ayarlar__bolum {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ayarlar__bolum h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-md);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ayarlar__uyari {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: var(--font-xs);
+  font-weight: 500;
+}
+
+.ayarlar__secenekler {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.secenek {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-sunken);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.secenek:hover {
+  border-color: var(--border-strong);
+}
+
+.secenek--etkin {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+
+.secenek b {
+  font-size: var(--font-md);
+  font-weight: 600;
+}
+
+.secenek span {
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+  line-height: 1.45;
+}
+
+.ayar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.ayar__ad {
+  font-size: var(--font-sm);
+  font-weight: 500;
+}
+
+.ayar__girdi {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ayar__girdi input {
+  width: 96px;
+  padding: 0 var(--space-2);
+  min-height: var(--control-height);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--font-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.ayar__girdi input:focus {
+  outline: none;
+  border-color: var(--accent-line);
+}
+
+.ayar__uzun {
+  width: 100% !important;
+  font-variant-numeric: normal !important;
+}
+
+.ayar__birim {
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+}
+
+.ayar__metin {
+  width: 100%;
+  padding: var(--space-2);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--font-sm);
+  resize: vertical;
+}
+
+.ayar__metin:focus {
+  outline: none;
+  border-color: var(--accent-line);
+}
+
+.ayar__not {
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  line-height: 1.5;
+}
+
+.ayar__not code {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--bg-sunken);
+  font-family: var(--font-mono);
+}
+
+/* ---------------------------------------------------------------------------
+ * Tema seçici
+ * ------------------------------------------------------------------------- */
+
+.tema__ornek {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: var(--space-2);
+  vertical-align: middle;
+}
+
+.tema__ornek i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid var(--border-strong);
+}
+
+/* Tema reddedilmiyor, kullanıcı uyarıyı görüyor ve geri alabiliyor
+   (`docs/Temalar.md`). */
+.tema__uyari {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--warning) !important;
+  font-size: var(--font-xs);
+}
+
+/* ---------------------------------------------------------------------------
+ * Arka plan görseli (Faz 4)
+ *
+ * Görsel bir `data:` adresi olarak `--arkaplan-gorsel` jetonuna yazılıyor
+ * (`useTema`), dosya yolu olarak DEĞİL: kabuğa dosya sistemi kanalı
+ * açmamak için (`src-tauri/src/theme/mod.rs`, `arkaplan_veri`).
+ *
+ * Üç ayrı katman var ve sırası önemli:
+ *
+ *   1. `.arkaplan`        — görselin kendisi, `z-index: -2`
+ *   2. `.arkaplan::after` — karartma perdesi, `z-index: -1`
+ *   3. arayüz             — normal akış
+ *
+ * Karartma AYRI bir katman çünkü `filter: blur()` görselin kendisine
+ * uygulanıyor ve perdeyi de bulanıklaştırsaydı kenarlarda halka çıkardı.
+ * Bulanık görsel ayrıca taşırılıyor (`inset: -40px`): `blur` kenarlarda
+ * saydamlık üretiyor ve taşırma olmadan çerçevede açık bir şerit kalıyor.
+ * ------------------------------------------------------------------------- */
+
+.arkaplan {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.arkaplan::before {
+  content: '';
+  position: absolute;
+  /* Bulanıklığın kenar halkasını kesmek için taşırma. */
+  inset: calc(-1 * var(--arkaplan-bulanik, 0px) - 8px);
+  background-image: var(--arkaplan-gorsel, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: blur(var(--arkaplan-bulanik, 0px));
+}
+
+.arkaplan::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  opacity: var(--arkaplan-karartma, 0);
+}
+
+/* Yerleşim, temanın `arkaplan.yerlesim` alanından geliyor ve dört değerle
+   sınırlı (`theme/paket.rs`); tanınmayan değer `kapla`ya düşüyor. */
+:root[data-arkaplan='sigdir'] .arkaplan::before {
+  background-size: contain;
+}
+
+:root[data-arkaplan='dose'] .arkaplan::before {
+  background-repeat: repeat;
+  background-size: auto;
+}
+
+:root[data-arkaplan='ortala'] .arkaplan::before {
+  background-size: auto;
+}
+
+/* Arka plan varken kabuğun kendi zemini saydamlaşıyor; yoksa görsel
+   görünmezdi. Yalnız kabuk sayfalarında: sekme webview'i ayrı bir native
+   pencere ve zaten üstte. */
+:root[data-arkaplan] body {
+  background: transparent;
+}
+
+:root[data-arkaplan] .yeni {
+  background: transparent;
+}
+
+/* ---------------------------------------------------------------------------
+ * Sekme: favicon, gizli işareti, grup şeridi (Faz 3–5)
+ * ------------------------------------------------------------------------- */
+
+.sekme__favicon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  object-fit: contain;
+  /* Sayfanın seçtiği bir görsel: sürüklendiğinde sekmenin sürükleme
+     davranışını bozmasın. */
+  pointer-events: none;
+}
+
+/* Gizli sekme AYRI görünüyor: kullanıcının hangi sekmenin gizli olduğunu
+   görmesi şart, yoksa gizli sandığı sekmede geçmişe yazan bir arama
+   yapıyor (`tabs::SekmeOzeti::gizli`). */
+.sekme--gizli {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+
+.sekme__gizli {
+  display: inline-flex;
+  flex: none;
+  color: var(--accent);
+}
+
+/* Grubun rengi sekmenin sol kenarında ince bir şerit. Renk bir enum'dan
+   geliyor (`tabs::GrupRengi`), kullanıcının yazdığı bir dizeden değil —
+   tema jetonlarındaki beyaz liste kuralıyla aynı gerekçe. */
+.sekme--grupta {
+  border-left: 3px solid var(--grup-renk, var(--border));
+}
+
+.grup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: none;
+  height: 26px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--grup-renk, var(--accent));
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  cursor: pointer;
+}
+
+.grup:hover {
+  color: var(--text);
+}
+
+.grup__ad {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grup__sayi {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Grup renkleri. Sekme çubuğunda yalnız bir şerit olarak görünüyorlar;
+   kontrast eşiği metin için geçerli, burada değil. */
+.renk--teal { --grup-renk: var(--accent); }
+.renk--mor { --grup-renk: #a78bfa; }
+.renk--kehribar { --grup-renk: #fbbf24; }
+.renk--kirmizi { --grup-renk: #fb7185; }
+.renk--yesil { --grup-renk: #a3e635; }
+.renk--mavi { --grup-renk: #60a5fa; }
+.renk--gri { --grup-renk: #94a3b8; }
+
+/* ---------------------------------------------------------------------------
+ * Engelleme rozeti ve indirme önerisi (Faz 3–4)
+ * ------------------------------------------------------------------------- */
+
+.rozet {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 22px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+
+.rozet--engel {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+/*
+ * İndirme önerisi: adres çubuğunun altında bir şerit. Modal DEĞİL — indirme
+ * sayfanın işini durdurmuyor ve kullanıcıyı da durdurmamalı.
+ *
+ * Katman **yüksekliği sıfır** bir akış öğesi: şerit ondan sarkıyor ve
+ * yerleşimi hiç değiştirmiyor. Normal akışta dursaydı içerik alanı
+ * daralır, `useIcerikAlani` yeni ölçüyü bildirir ve sekme webview'i her
+ * indirme önerisinde bir kez yeniden boyutlanırdı.
+ */
+.indirme-kat {
+  position: relative;
+  height: 0;
+  z-index: 40;
+}
+
+.indirme {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: min(560px, calc(100% - 2 * var(--space-4)));
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-2);
+}
+
+.indirme__ad {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-sm);
+}
+
+.indirme__boyut {
+  flex: none;
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.indirme__eylem {
+  display: flex;
+  flex: none;
+  gap: var(--space-2);
+}
+
+/* Onay kutulu ayar satırı: kutu solda, açıklama altta ve tam genişlikte. */
+.ayar--satir {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.ayar--satir .ayar__not {
+  grid-column: 2;
+}
+
+/* Geri alınamayan eylem. Kırmızı DEĞİL: veri temizleme kullanıcının kasten
+   istediği bir şey ve kırmızı düğme onu korkutup özelliği kullanılmaz
+   yapıyor. Yalnız kenarlık ayrışıyor. */
+.dugme--tehlike {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.dugme--tehlike:disabled {
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------------------------
+ * Köprü menüsü ve grup paneli (Faz 5)
+ * ------------------------------------------------------------------------- */
+
+.kopru {
+  position: relative;
+}
+
+.kopru__menu {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 320px;
+  padding: var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-2);
+}
+
+.kopru__oge {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.kopru__oge:hover:not(:disabled) {
+  background: var(--bg-panel);
+}
+
+.kopru__oge:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.kopru__oge span {
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  line-height: 1.45;
+}
+
+.kopru__oge--form {
+  cursor: default;
+}
+
+.kopru__girdi {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.kopru__girdi input {
+  flex: 1;
+  min-width: 0;
+}
+
+.grupsel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.grupsel__yeni {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.grupsel__yeni input {
+  flex: 1;
+  min-width: 0;
+}
+
+.grupsel__liste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grupsel__oge {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--grup-renk, var(--accent));
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel);
+}
+
+.grupsel__ust {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.grupsel__renkler {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.grupsel__renk {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: var(--grup-renk);
+  cursor: pointer;
+}
+
+.grupsel__renk--etkin {
+  border-color: var(--text);
+}
+
+.grupsel__ad {
+  width: 100%;
+}
+
+.grupsel__satir {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+}
+
+.grupsel__satir input[type='number'] {
+  width: 72px;
+}
+
+.grupsel__ekle {
+  align-self: flex-start;
+}
+
+/* ---------------------------------------------------------------------------
+ * Teşhis ekranı
+ *
+ * `docs/Medya.md`: GPU, codec ve DRM durumu. Ayarlar ekranıyla aynı örtüyü ve
+ * aynı bölüm kalıbını kullanıyor — ikinci bir ekran dili tanımlamanın
+ * karşılığı yok; jetonlar zaten tek yerden geliyor (CLAUDE.md #9).
+ * ------------------------------------------------------------------------- */
+
+.teshis__satir {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.teshis__satir b {
+  color: var(--text);
+  font-weight: 600;
+  text-align: right;
+  /* Sürücü dizesi uzun; satır taşıp paneli yatay kaydırmasın. */
+  overflow-wrap: anywhere;
+}
+
+.teshis__satir small {
+  margin-left: 4px;
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+}
+
+/* Eksik yetenek bir arıza değil, eski bir Runtime (`docs/Setup.md`); yine de
+   diğer satırlardan ayrılıyor ki tabloya bakan kişi eksiği görsün. */
+.teshis__yok {
+  color: var(--text-muted) !important;
+  font-weight: 500 !important;
+}
+
+.teshis__rapor {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-sunken);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-xs);
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.teshis__dugmeler {
+  display: flex;
+  gap: var(--space-2);
+}

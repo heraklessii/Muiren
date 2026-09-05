@@ -1,0 +1,14 @@
+{
+  "ad": "deneme",
+  "adresler": [
+    "https://example.com/",
+    "https://example.org/",
+    "https://www.rust-lang.org/",
+    "https://tauri.app/",
+    "https://developer.mozilla.org/"
+  ],
+  "acilisAraligiMs": 1500,
+  "yerlesmeSn": 20,
+  "bostaSn": 120,
+  "cikti": ""
+}

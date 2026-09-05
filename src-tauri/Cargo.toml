@@ -1,0 +1,74 @@
+[package]
+name = "muiren"
+version = "0.1.0"
+description = "Cok sekmede az RAM harcayan masaustu web tarayicisi"
+edition = "2021"
+rust-version = "1.77.2"
+license = "Apache-2.0"
+
+[lib]
+# Tauri v2 sozlesmesi: asil kod kutuphanede, main.rs yalniz onu cagiriyor.
+name = "muiren_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[features]
+# Motor VARSAYILAN olarak acik. Kapatildiginda `motor/yok.rs` devreye giriyor;
+# o derleme `tabs/`, `settings/` gibi karar veren modullerin motora
+# sizmadigini DERLEYICIYLE kanitliyor ve Windows'suz makinede de gecer
+# (bkz. docs/Setup.md "Cargo ozellikleri").
+default = ["motor"]
+motor = ["dep:webview2-com", "dep:windows"]
+
+[dependencies]
+# `unstable`: bir pencerede birden cok webview. Muiren'in tamami bunun
+# uzerinde duruyor -- API minor surumlerde degisebilir, kirilma
+# `motor/gercek.rs` icinde kalsin diye motor soyutlamasi var.
+tauri = { version = "2", features = ["unstable"] }
+serde = { version = "1", features = ["derive"] }
+# `log`: kendi mesajlarımız için değil — Tauri ve wry hatalarını YAKALAMAK
+# için. İkisi de `log::error!` ile yazıp çağırana `Ok` dönebiliyor; bir
+# uygulama kurulu değilse o satırlar hiçbir yere gitmiyor (`src/gunluk.rs`).
+log = "0.4"
+serde_json = "1"
+# Adres ayrıştırma. Sürüm Tauri’nin çözdüğüyle aynı olmak zorunda: `Webview::navigate`
+# `tauri::Url` alıyor ve o da bu crate’in `Url` tipi.
+url = "2"
+
+# Geçmiş ve yer imleri. `bundled`: SQLite kaynaktan derleniyor, sistemde
+# kurulu bir kütüphane aranmıyor — kullanıcının makinesinde eksik bir DLL
+# yüzünden açılmayan tarayıcı olmasın (`docs/Depolama.md`).
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# Ham ICoreWebView2 erisimi: TrySuspend / Resume / bellek hedefi.
+# Tauri'nin sardigi API'de bu cagrilar yok (docs/Setup.md).
+# Surum, Tauri'nin (wry uzerinden) cozdugu surumle ayni olmak ZORUNDA --
+# ayrisirsa `with_webview`in verdigi ICoreWebView2Controller baska bir tip
+# olur ve `cast` derlenmez.
+webview2-com = { version = "0.38", optional = true }
+windows = { version = "0.61", optional = true, features = [
+  "Win32_Foundation",
+  "Win32_System_Com",
+  # `GetKeyState`: hızlandırıcı olayı tuşu veriyor ama değiştiricileri
+  # (Ctrl/Shift/Alt) vermiyor; onları klavye durumundan okuyoruz.
+  "Win32_UI_Input_KeyboardAndMouse",
+  # `GlobalMemoryStatusEx` + süreç bellek ölçümü (Faz 2, `memory/olcum.rs`).
+  "Win32_System_SystemInformation",
+  "Win32_System_ProcessStatus",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_Threading",
+] }
+zip = { version = "4.2.0", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+# Kardeş uygulamaların kurulu olup olmadığı kayıt defterinden okunuyor
+# (`docs/Kopruler.md`: kayıt anahtarı → bilinen yollar → kurulu değil).
+# Tauri'nin ağacında zaten var, yeni bir derleme maliyeti yok. `cfg(windows)`
+# altında: `--no-default-features` Windows'suz makinede de derlenmeye devam
+# ediyor ve orada bulucu "kurulu değil" diyor.
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"

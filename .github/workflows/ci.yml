@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Art arda atılan iki commit'te ilkini sonuna kadar beklemenin faydası yok.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  arayuz:
+    name: Arayüz (tsc + vite + vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
+  motor:
+    name: Motor (test + clippy + fmt)
+    # Windows: ürünün birincil ve şimdilik tek hedefi burası (WebView2).
+    # Tauri'nin Linux'ta istediği webkit2gtk/gtk paketlerini kurmak da
+    # gerekmiyor.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Rust derlemesi `dist/` olmadan başarısız olur: `tauri.conf.json`
+      # içindeki `frontendDist` yolunu `generate_context!` derleme anında
+      # arıyor. Bu yüzden testten önce arayüz derleniyor.
+      - run: npm ci
+      - run: npm run build
+
+      - name: cargo test
+        working-directory: src-tauri
+        run: cargo test
+
+      # Motorsuz derleme: `tabs/`, `memory/`, `history/`, `theme/` modüllerinin
+      # motora sızmadığını DERLEYİCİYLE kanıtlıyor (docs/Setup.md, CLAUDE.md #4).
+      # `motor/yok.rs`, `gercek.rs` ile yüzeyi ayrıştığı anda burada düşüyor —
+      # o ayrışma normalde en kötü anda fark ediliyor.
+      - name: cargo test --no-default-features
+        working-directory: src-tauri
+        run: cargo test --no-default-features
+
+      - name: cargo clippy
+        working-directory: src-tauri
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: cargo fmt
+        working-directory: src-tauri
+        run: cargo fmt --check

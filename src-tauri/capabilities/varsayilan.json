@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "varsayilan",
+  "description": "Yalniz KABUK webview'inin izinleri. Sekme webview'leri (yani acilan web sayfalari) bu listede YOK -- sayfaya hicbir ayricalikli kanal acilmiyor (docs/IPC.md, 'Sozlesme disi: sayfadan gelen mesajlar').",
+  "windows": ["ana"],
+  "webviews": ["kabuk"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "core:window:allow-start-dragging",
+    "core:webview:allow-internal-toggle-devtools"
+  ]
+}

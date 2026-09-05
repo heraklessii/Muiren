@@ -1,0 +1,62 @@
+name: Release
+
+# `v` ile başlayan bir etiket itilince kurulum paketlerini derleyip GitHub
+# Release'ine yükler. Etiketi elle atmak bilinçli: her commit'te sürüm
+# yayınlamak, henüz sahada denenmemiş bir uygulama için yanlış sinyal olurdu.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Windows kurulum paketleri
+    # Yalnız Windows. Muiren sayfayı WebView2'ye çizdiriyor ve WebView2
+    # Windows'a özel; Linux/macOS paketi üretmek, açılmayacak bir uygulamayı
+    # paketlemek olurdu (docs/Roadmap.md — "Mobil ve çoklu platform yok").
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Muiren ${{ github.ref_name }}
+          releaseBody: |
+            **Windows 10 / 11 (x64)**
+            - `.exe` — NSIS kurulumu (önerilen, daha küçük)
+            - `.msi` — kurumsal dağıtım için
+
+            **Bu bir ön sürüm.** Sekmeler, bellek politikası, geçmiş, temalar,
+            engelleme ve köprüler yazıldı ve otomatik testlerle doğrulanıyor;
+            ancak projenin asıl iddiası olan bellek kazancı **henüz
+            ölçülmedi**. Ne yaptığı ve ne yapmadığı için
+            [README](https://github.com/heraklessii/Muiren#ne-yapmaz).
+
+            Kurulum paketleri imzasız: Windows SmartScreen uyarı gösterecek.
+            Kod imzalama sertifikası henüz yok.
+
+            Durum tablosu: [`docs/Roadmap.md`](https://github.com/heraklessii/Muiren/blob/main/docs/Roadmap.md)
+          releaseDraft: false
+          # Ön sürüm: uygulama sahada geniş çapta denenmedi, "Latest" rozetini
+          # taşımamalı.
+          prerelease: true

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!--
+    Muiren uygulama ikonunun KAYNAĞI.
+
+    Buradaki her PNG (icon.png, icon.ico, Square*Logo.png ...) bu dosyadan
+    üretiliyor. İkonu değiştirmek isteyen önce burayı düzenler, sonra:
+
+        npx tauri icon src-tauri/icons/kaynak.svg
+
+    Glyph, `public/icons/muiren.svg` ve `index.html` favicon'uyla AYNI yol;
+    sadece 32'lik ızgaradan 1024'e ölçeklenmiş hâli (çarpan 32). Üçünden biri
+    değişirse diğer ikisi de değişmeli (CLAUDE.md, tutarlılık bölümü).
+
+    Kare/gradyan iskeleti Mui ailesinden (Muiget, Muiply, Muivly, Muifly,
+    Muiwatch) geliyor: aynı köşe yarıçapı, aynı koyu zemin, aynı teal vurgu.
+
+    Glyph neden pusula: Muiply'ın glyph'i çember + üçgen, çünkü işi dosyayı
+    açıp çalmak. Muiren'in işi de tek şey — adresi alıp oraya gitmek. Çember
+    pusulanın kadranı, iğnenin YALNIZ kuzey yarısı dolu; güney yarısı sadece
+    çizgi. Ailenin "tek dolu vurgu" kuralı bu şekilde korunuyor.
+  -->
+  <defs>
+    <linearGradient id="zemin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b232c"/>
+      <stop offset="1" stop-color="#0b0d11"/>
+    </linearGradient>
+    <linearGradient id="cizgi" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="1" stop-color="#2dd4bf"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="48" y="48" width="928" height="928" rx="232" fill="url(#zemin)"/>
+
+  <!-- 32'lik ızgaradaki değerlerin 32 katı -->
+  <circle cx="512" cy="512" r="339.2" fill="none" stroke="url(#cizgi)" stroke-width="76.8"/>
+  <path d="M512 780.8 614.4 512 409.6 512z" fill="none" stroke="url(#cizgi)" stroke-width="64" stroke-linejoin="round"/>
+  <path d="M512 243.2 614.4 512 409.6 512z" fill="url(#cizgi)"/>
+</svg>

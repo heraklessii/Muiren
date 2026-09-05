@@ -1,0 +1,1349 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Muiren — Çok sekmede az RAM harcayan tarayıcı</title>
+    <meta
+      name="description"
+      content="Boştaki sekmeleri uyutup atan, oyun ve video için belleği geri veren masaüstü tarayıcı. Apache 2.0, telemetri yok, hesap yok."
+    />
+    <link rel="icon" type="image/svg+xml" href="ikon.svg" />
+
+    <meta property="og:title" content="Muiren — Çok sekmede az RAM harcayan tarayıcı" />
+    <meta
+      property="og:description"
+      content="Boştaki sekmeleri uyutup atan, oyun ve video için belleği geri veren masaüstü tarayıcı. Apache 2.0, telemetri yok, hesap yok."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0f1115" />
+
+    <style>
+      @font-face {
+        font-family: 'Outfit';
+        src: url('outfit-latin.woff2') format('woff2');
+        font-weight: 100 900;
+        font-display: swap;
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2122;
+      }
+      @font-face {
+        font-family: 'Outfit';
+        src: url('outfit-latin-ext.woff2') format('woff2');
+        font-weight: 100 900;
+        font-display: swap;
+        unicode-range: U+0100-02AF, U+1E00-1EFF, U+2020, U+20A0-20AB;
+      }
+
+      /* Uygulamanın kendi paletiyle aynı (src/styles.css). Tahmin yok. */
+      :root {
+        --bg: #0f1115;
+        --bg-alt: #12151b;
+        --panel: #181b22;
+        --elevated: #20242d;
+        --border: #262b35;
+        --border-soft: #1e222b;
+        --text: #e8eaed;
+        --muted: #8b93a3;
+        --faint: #5f6878;
+        --accent: #2dd4bf;
+        --accent-strong: #5eead4;
+        --on-accent: #04211d;
+        --warning: #fbbf24;
+        --sleep: #94a3b8;
+        --radius: 14px;
+        --radius-lg: 20px;
+        --max: 1080px;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        font-size: 17px;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+
+      code {
+        font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+        font-size: 0.86em;
+        background: var(--elevated);
+        border: 1px solid var(--border-soft);
+        padding: 0.12em 0.42em;
+        border-radius: 6px;
+        color: var(--accent-strong);
+      }
+
+      .kapsam {
+        width: 100%;
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* ---------------- üst çubuk ---------------- */
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgb(15 17 21 / 82%);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border-soft);
+      }
+
+      .ust {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        height: 62px;
+      }
+
+      .marka {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        font-size: 18px;
+        color: var(--text);
+        text-decoration: none;
+        letter-spacing: -0.01em;
+      }
+
+      .marka img {
+        width: 26px;
+        height: 26px;
+      }
+
+      header nav {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        font-size: 15px;
+      }
+
+      header nav a {
+        color: var(--muted);
+        text-decoration: none;
+      }
+
+      header nav a:hover {
+        color: var(--text);
+      }
+
+      header nav a.gh {
+        color: var(--accent);
+      }
+
+      /* ---------------- hero ---------------- */
+
+      .hero {
+        padding: 92px 0 24px;
+        position: relative;
+      }
+
+      .hero::before {
+        content: '';
+        position: absolute;
+        inset: -180px 0 auto 0;
+        height: 520px;
+        background: radial-gradient(
+          ellipse 60% 50% at 50% 40%,
+          rgb(45 212 191 / 9%),
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+
+      .rozet {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13.5px;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        background: var(--panel);
+        padding: 5px 13px;
+        border-radius: 999px;
+      }
+
+      .nokta {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--warning);
+        display: inline-block;
+      }
+
+      .hero h1 {
+        font-size: clamp(38px, 6vw, 62px);
+        font-weight: 600;
+        margin: 26px 0 0;
+        max-width: 15ch;
+      }
+
+      .vurgu {
+        color: var(--accent);
+      }
+
+      .alt-baslik {
+        color: var(--muted);
+        font-size: 19px;
+        max-width: 62ch;
+        margin: 22px 0 0;
+      }
+
+      .dugmeler {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 34px;
+      }
+
+      .dugme {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        padding: 11px 20px;
+        border-radius: 11px;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text);
+        text-decoration: none;
+        font-size: 15.5px;
+        font-weight: 500;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+      }
+
+      .dugme:hover {
+        border-color: var(--faint);
+        background: var(--elevated);
+      }
+
+      .dugme svg {
+        width: 17px;
+        height: 17px;
+      }
+
+      .dugme.birincil {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--on-accent);
+        font-weight: 600;
+      }
+
+      .dugme.birincil:hover {
+        background: var(--accent-strong);
+        border-color: var(--accent-strong);
+      }
+
+      .guven {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 22px;
+        margin-top: 30px;
+        color: var(--faint);
+        font-size: 14.5px;
+      }
+
+      .guven span {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .guven svg {
+        width: 15px;
+        height: 15px;
+        color: var(--accent);
+      }
+
+      /* ---------------- sekme vitrini ---------------- */
+
+      .vitrin {
+        margin: 62px auto 0;
+        max-width: var(--max);
+        padding: 0 24px;
+      }
+
+      .pencere {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--bg-alt);
+        overflow: hidden;
+        box-shadow: 0 32px 80px -24px rgb(0 0 0 / 80%);
+      }
+
+      .pencere-cubugu {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 11px 15px;
+        border-bottom: 1px solid var(--border-soft);
+        background: var(--panel);
+      }
+
+      .pencere-cubugu i {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--border);
+      }
+
+      .pencere-cubugu b {
+        margin-left: 10px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--faint);
+      }
+
+      .sekmeler {
+        display: flex;
+        gap: 6px;
+        padding: 12px 14px;
+        overflow-x: auto;
+        border-bottom: 1px solid var(--border-soft);
+      }
+
+      .sekme {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 13px;
+        border-radius: 9px;
+        border: 1px solid var(--border-soft);
+        background: var(--panel);
+        font-size: 13px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .sekme .durum {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--sleep);
+        flex: 0 0 auto;
+      }
+
+      .sekme.etkin {
+        background: var(--elevated);
+        border-color: var(--accent-strong);
+        color: var(--text);
+      }
+
+      .sekme.etkin .durum {
+        background: var(--accent);
+      }
+
+      .sekme.uyuyan {
+        opacity: 0.52;
+      }
+
+      .sekme.atilmis {
+        opacity: 0.34;
+        border-style: dashed;
+      }
+
+      .panel-govde {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1px;
+        background: var(--border-soft);
+      }
+
+      .panel-kutu {
+        background: var(--bg-alt);
+        padding: 26px 28px;
+      }
+
+      .panel-kutu h4 {
+        margin: 0 0 4px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--faint);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .panel-kutu p {
+        color: var(--muted);
+        font-size: 15px;
+        margin: 14px 0 0;
+      }
+
+      .buyuk-sayi {
+        font-size: 32px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+
+      .buyuk-sayi small {
+        font-size: 15px;
+        font-weight: 400;
+        color: var(--muted);
+        margin-left: 5px;
+      }
+
+      .liste-satir {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 7px 0;
+        font-size: 14px;
+        color: var(--muted);
+        border-bottom: 1px solid var(--border-soft);
+      }
+
+      .liste-satir:last-child {
+        border-bottom: 0;
+      }
+
+      .liste-satir b {
+        font-weight: 500;
+        color: var(--text);
+      }
+
+      .etiket-uyku {
+        font-size: 11.5px;
+        color: var(--sleep);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 1px 8px;
+      }
+
+      /* ---------------- bölümler ---------------- */
+
+      .bolum {
+        padding: 92px 0;
+        border-top: 1px solid var(--border-soft);
+      }
+
+      .bolum-basi {
+        max-width: 680px;
+        margin-bottom: 48px;
+      }
+
+      .etiket {
+        display: inline-block;
+        font-size: 12.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 14px;
+      }
+
+      .bolum h2 {
+        font-size: clamp(28px, 3.6vw, 38px);
+        font-weight: 600;
+      }
+
+      .bolum-alt {
+        color: var(--muted);
+        margin: 16px 0 0;
+        font-size: 17.5px;
+      }
+
+      .adimlar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 18px;
+      }
+
+      .adim {
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        background: var(--panel);
+        padding: 24px;
+      }
+
+      .adim .sira {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: var(--elevated);
+        border: 1px solid var(--border);
+        color: var(--accent);
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 14px;
+      }
+
+      .adim h3 {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .adim p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .not-metin {
+        margin-top: 34px;
+        color: var(--muted);
+        max-width: 720px;
+      }
+
+      .kartlar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 18px;
+      }
+
+      .kart {
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        background: var(--panel);
+        padding: 26px;
+      }
+
+      .kart h3 {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .kart h3 svg {
+        width: 18px;
+        height: 18px;
+        color: var(--accent);
+        flex: 0 0 auto;
+      }
+
+      .kart p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .kart b {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      /* ---------------- dürüstlük bölümü ---------------- */
+
+      .durust {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: linear-gradient(180deg, var(--panel), var(--bg-alt));
+        padding: 34px 36px;
+        max-width: 780px;
+      }
+
+      .durust p {
+        margin: 0 0 16px;
+        color: var(--muted);
+      }
+
+      .durust p:last-child {
+        margin-bottom: 0;
+      }
+
+      .durust strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .yapmaz {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 14px 32px;
+        list-style: none;
+        padding: 0;
+        margin: 44px 0 0;
+      }
+
+      .yapmaz li {
+        display: flex;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 15.5px;
+        border-bottom: 1px solid var(--border-soft);
+        padding-bottom: 14px;
+      }
+
+      .yapmaz li svg {
+        width: 17px;
+        height: 17px;
+        flex: 0 0 auto;
+        margin-top: 5px;
+        color: var(--faint);
+      }
+
+      .yapmaz b {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      /* ---------------- aile ---------------- */
+
+      .aile {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 14px;
+      }
+
+      .aile a {
+        display: block;
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        background: var(--panel);
+        padding: 20px 22px;
+        text-decoration: none;
+        color: var(--text);
+        transition: border-color 0.15s;
+      }
+
+      .aile a:hover {
+        border-color: var(--accent);
+      }
+
+      .aile b {
+        display: block;
+        font-size: 17px;
+        font-weight: 600;
+        margin-bottom: 3px;
+      }
+
+      .aile span {
+        color: var(--muted);
+        font-size: 14.5px;
+      }
+
+      /* ---------------- kurulum ---------------- */
+
+      .kurulum-kutu {
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        background: var(--panel);
+        padding: 26px 28px;
+        max-width: 720px;
+      }
+
+      .kurulum-kutu ul {
+        margin: 0 0 20px;
+        padding-left: 20px;
+        color: var(--muted);
+      }
+
+      .kurulum-kutu li {
+        margin-bottom: 7px;
+      }
+
+      .kurulum-kutu .dugmeler {
+        margin-top: 0;
+        margin-bottom: 22px;
+      }
+
+      .not {
+        display: flex;
+        gap: 12px;
+        border-left: 2px solid var(--warning);
+        background: rgb(251 191 36 / 6%);
+        padding: 14px 18px;
+        border-radius: 0 10px 10px 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .not b {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      /* ---------------- alt ---------------- */
+
+      footer {
+        border-top: 1px solid var(--border-soft);
+        padding: 44px 0 60px;
+        color: var(--faint);
+        font-size: 14.5px;
+      }
+
+      .alt-satir {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        align-items: center;
+      }
+
+      .alt-satir nav {
+        margin-left: auto;
+        display: flex;
+        gap: 20px;
+      }
+
+      footer a {
+        color: var(--muted);
+        text-decoration: none;
+      }
+
+      footer a:hover {
+        color: var(--accent);
+      }
+
+      @media (max-width: 760px) {
+        header nav a:not(.gh) {
+          display: none;
+        }
+
+        .panel-govde {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          padding-top: 62px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <div class="kapsam ust">
+        <a class="marka" href="#">
+          <img src="ikon.svg" alt="" />
+          Muiren
+        </a>
+        <nav>
+          <a href="#nasil">Nasıl çalışır</a>
+          <a href="#ozellikler">Özellikler</a>
+          <a href="#durustluk">Ne vaat etmiyor</a>
+          <a href="#kurulum">Kurulum</a>
+          <a class="gh" href="https://github.com/heraklessii/Muiren">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <!-- ================= HERO ================= -->
+      <section class="hero">
+        <div class="kapsam">
+          <span class="rozet"><i class="nokta"></i> v0.1.0 · ön sürüm</span>
+
+          <h1>Kırk sekme açık. <span class="vurgu">Otuz dokuzu uyuyor.</span></h1>
+
+          <p class="alt-baslik">
+            Muiren boştaki sekmeleri önce dondurur, baskı sürerse tamamen atar.
+            Sekme çubuğundaki yerleri, başlıkları ve adresleri durur —
+            tıklandığında geri gelirler. Oyunun ve videonun payına düşen bellek,
+            bakılmayan sekmelerde beklemez.
+          </p>
+
+          <div class="dugmeler">
+            <a class="dugme birincil" href="https://github.com/heraklessii/Muiren/releases/latest">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 3v12" />
+                <path d="m7 11 5 5 5-5" />
+                <path d="M4 20h16" />
+              </svg>
+              Windows için indir
+            </a>
+            <a class="dugme" href="#durustluk">Ne vaat etmiyor</a>
+            <a class="dugme" href="https://github.com/heraklessii/Muiren">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path
+                  d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.36 1.09 2.94.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.93.36.31.68.92.68 1.86v2.75c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"
+                />
+              </svg>
+              Kaynak kodu
+            </a>
+          </div>
+
+          <div class="guven">
+            <span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m5 12 5 5L20 7" />
+              </svg>
+              Apache 2.0
+            </span>
+            <span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m5 12 5 5L20 7" />
+              </svg>
+              Telemetri yok
+            </span>
+            <span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m5 12 5 5L20 7" />
+              </svg>
+              Hesap yok
+            </span>
+            <span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m5 12 5 5L20 7" />
+              </svg>
+              431 otomatik test
+            </span>
+          </div>
+        </div>
+
+        <div class="vitrin">
+          <div class="pencere">
+            <div class="pencere-cubugu">
+              <i></i><i></i><i></i>
+              <b>Muiren — sekme durumları</b>
+            </div>
+
+            <div class="sekmeler" aria-label="Sekme durumları örneği">
+              <span class="sekme etkin"><i class="durum"></i> Crunchyroll</span>
+              <span class="sekme"><i class="durum"></i> Radyo — ses çalıyor</span>
+              <span class="sekme uyuyan"><i class="durum"></i> Reddit</span>
+              <span class="sekme uyuyan"><i class="durum"></i> Wiki — Sanat</span>
+              <span class="sekme uyuyan"><i class="durum"></i> Forum</span>
+              <span class="sekme atilmis"><i class="durum"></i> Haberler</span>
+              <span class="sekme atilmis"><i class="durum"></i> Alışveriş</span>
+              <span class="sekme atilmis"><i class="durum"></i> Blog</span>
+            </div>
+
+            <div class="panel-govde">
+              <div class="panel-kutu">
+                <h4>Sekme durumları</h4>
+                <div class="buyuk-sayi">2 <small>uyanık · 3 uyuyan · 3 atılmış</small></div>
+                <p>
+                  Uyanık kalanlar: bakılan sekme ve ses çalan sekme. Sabitlenmiş,
+                  ses çalan ve tam ekran sekmelere dokunulmuyor — müzik çalarken
+                  sekmenin susması bir hata olurdu.
+                </p>
+              </div>
+              <div class="panel-kutu">
+                <h4>Bellek panelinde ne var</h4>
+                <div class="liste-satir"><span>Sekme başına yaklaşık MB</span><b>ölçülüyor</b></div>
+                <div class="liste-satir"><span>Uyandırma gecikmesi</span><b>ölçülüyor</b></div>
+                <div class="liste-satir"><span>WebView2 süreç sayısı</span><b>ölçülüyor</b></div>
+                <div class="liste-satir">
+                  <span>Uyuyan sekmenin rakamı</span
+                  ><span class="etiket-uyku">son bilinen değer</span>
+                </div>
+                <p>
+                  Uyuyan bir sekme ölçüm için uyandırılmıyor. Uyandırılsaydı
+                  panelin gösterdiği rakam, panelin kendi eseri olurdu.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= NASIL ÇALIŞIR ================= -->
+      <section id="nasil" class="bolum">
+        <div class="kapsam">
+          <div class="bolum-basi">
+            <span class="etiket">Nasıl çalışır</span>
+            <h2>Elli sekme açan bir insanın aynı anda baktığı sekme sayısı: bir.</h2>
+            <p class="bolum-alt">
+              Diğer kırk dokuzunun render süreci, JS yığını ve compositor dokusu
+              hiçbir işe yaramadan RAM'de duruyor. Muiren'in yaptığı tek şey, o
+              kırk dokuzun maliyetini geri almak — sekmeyi kaybetmeden.
+            </p>
+          </div>
+
+          <div class="adimlar">
+            <div class="adim">
+              <span class="sira">1</span>
+              <h3>Arkaplan</h3>
+              <p>
+                Sekme görünmüyor ama hâlâ çalışıyor. Sayaç işliyor: ne kadar
+                süredir boşta?
+              </p>
+            </div>
+            <div class="adim">
+              <span class="sira">2</span>
+              <h3>Uyuyan</h3>
+              <p>
+                Eşik dolunca WebView2'nin <code>TrySuspend</code> çağrısıyla
+                donduruluyor. Süreç duruyor, sekme yerinde.
+              </p>
+            </div>
+            <div class="adim">
+              <span class="sira">3</span>
+              <h3>Atılmış</h3>
+              <p>
+                Sistem baskısı sürüyorsa webview tamamen yıkılıyor. Başlık, adres
+                ve gezinme geçmişi kabukta duruyor.
+              </p>
+            </div>
+            <div class="adim">
+              <span class="sira">4</span>
+              <h3>Geri gelme</h3>
+              <p>
+                Tıklandığında uyanıyor ya da yeniden yükleniyor. Sekme
+                çubuğundaki yeri hiç değişmedi.
+              </p>
+            </div>
+          </div>
+
+          <div class="not-metin">
+            <p>
+              Kararı veren kod bellek gözcüsünün kendi iş parçacığında çalışıyor —
+              sekme çubuğunun çizilmiş olup olmamasından bağımsız. Eşikler koda
+              gömülü değil: 8 GB'lık bir dizüstü ile 32 GB'lık bir masaüstü aynı
+              politikayı kaldırmıyor, ikisi de ayarlardan besleniyor.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= ÖZELLİKLER ================= -->
+      <section id="ozellikler" class="bolum">
+        <div class="kapsam">
+          <div class="bolum-basi">
+            <span class="etiket">Özellikler</span>
+            <h2>Tarayıcının geri kalanı da yerinde.</h2>
+          </div>
+
+          <div class="kartlar">
+            <div class="kart">
+              <h3>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.9"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="3" y="4" width="18" height="16" rx="2" />
+                  <path d="M3 9h18" />
+                </svg>
+                Bellek paneli
+              </h3>
+              <p>
+                Sekme başına yaklaşık MB, uyandırma gecikmesi, WebView2 süreç
+                sayısı. Uyuyan bir sekme ölçüm için <b>uyandırılmaz</b>; son
+                bilinen değer gösterilir.
+              </p>
+            </div>
+            <div class="kart">
+              <h3>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.9"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M6 3v12" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="6" r="3" />
+                  <path d="M18 9v3a6 6 0 0 1-6 6H9" />
+                </svg>
+                Sekme ağacı ve grupları
+              </h3>
+              <p>
+                Bir sekmeden açılan sekme onun altında duruyor. Gruba kendi eşiği
+                verilebiliyor: "bu on sekme araştırma, acele uyusunlar."
+              </p>
+            </div>
+            <div class="kart">
+              <h3>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.9"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="m6 4 12 8-12 8Z" />
+                </svg>
+                Oyun modu
+              </h3>
+              <p>
+                Tam ekran bir oyun algılandığında tarayıcı kendi payını
+                düşürüyor: arka plan sekmeleri daha erken uyuyor, animasyonlar
+                duruyor.
+              </p>
+            </div>
+            <div class="kart">
+              <h3>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.9"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="13.5" cy="6.5" r="2.5" />
+                  <circle cx="19" cy="13" r="2.5" />
+                  <circle cx="6" cy="12" r="2.5" />
+                  <path d="M12 22a10 10 0 1 1 0-20c4 0 5 3 3.5 4.5" />
+                </svg>
+                Tema paketi
+              </h3>
+              <p>
+                Renk jetonları ve arka plan görseli <code>.muitema</code>
+                dosyasıyla değişiyor. Tema <b>JavaScript çalıştırmaz</b>; paket
+                doğrulanmadan uygulanmaz.
+              </p>
+            </div>
+            <div class="kart">
+              <h3>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.9"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M12 3 4 6v6c0 5 3.4 8.4 8 9 4.6-.6 8-4 8-9V6Z" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+                Engelleme — ama sessiz değil
+              </h3>
+              <p>
+                Filtre listesi ayar yazıldığında bir kez derleniyor, her istekte
+                değil. Engellenen pop-up ya da istek adres çubuğunda rozetle
+                duyuruluyor: bazı siteler ödeme akışını pop-up'ta açıyor.
+              </p>
+            </div>
+            <div class="kart">
+              <h3>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.9"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="m3 21 18-18" />
+                </svg>
+                Gizli sekme
+              </h3>
+              <p>
+                Motorun InPrivate kipi çerezi ve önbelleği bellekte tutuyor.
+                Geçmiş, oturum dosyası ve favicon deposu ise <b>bizim</b> — üçü
+                de ayrıca kapatılıyor.
+              </p>
+            </div>
+            <div class="kart">
+              <h3>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.9"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-4.3-4.3" />
+                </svg>
+                Türkçe arama
+              </h3>
+              <p>
+                Geçmiş araması Türkçe küçük harfe duyarlı: "İSTANBUL" yazınca
+                "istanbul" bulunuyor. Düz <code>toLowerCase</code> bulmuyor.
+              </p>
+            </div>
+            <div class="kart">
+              <h3>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.9"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M12 3v12" />
+                  <path d="m7 11 5 5 5-5" />
+                  <path d="M4 20h16" />
+                </svg>
+                Mui ailesine devir
+              </h3>
+              <p>
+                İndirme Muiget'e, birlikte izleme Muiwatch'a, oyun modu Muifly'a
+                gidiyor. Köprüden yalnız bir adres ya da dosya yolu geçiyor —
+                çerez ve sayfa içeriği geçmiyor.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= DÜRÜSTLÜK ================= -->
+      <section id="durustluk" class="bolum">
+        <div class="kapsam">
+          <div class="bolum-basi">
+            <span class="etiket">Ne vaat etmiyor</span>
+            <h2>Muiren tek sekmede Chrome'dan az RAM yemez.</h2>
+            <p class="bolum-alt">
+              Yemez, çünkü aynı motoru kullanıyor. Bunu pazarlamada da
+              söylemeyeceğiz.
+            </p>
+          </div>
+
+          <div class="durust">
+            <p>
+              Muiren bir <strong>kabuk</strong>: sekme yönetimi, bellek
+              politikası, tema ve köprüler. Sayfayı WebView2 (Edge Chromium)
+              çiziyor. Açık bir YouTube sekmesi Muiren'de de Chrome'daki kadar
+              yer kaplar. Kazanç, açık duran ama <strong>bakılmayan</strong>
+              sekmelerden geliyor — başka bir yerden değil.
+            </p>
+            <p>
+              Ve şu an itibarıyla o kazanç <strong>ölçülmedi</strong>. Sekme
+              yönetimi, bellek politikası, geçmiş, temalar, engelleme ve köprüler
+              yazıldı; 431 otomatik test geçiyor. Ama uygulama geniş çapta sahada
+              denenmedi ve "şu kadar MB" diyebileceğimiz bir rapor henüz yok.
+              Ölçüm aracı yazıldı; rakamlar çıkınca burada olacak.
+            </p>
+          </div>
+
+          <ul class="yapmaz">
+            <li>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              >
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+              <span
+                ><b>Kendi render motoru yok.</b> Blink yazmıyoruz. Sayfayı
+                WebView2 çiziyor.</span
+              >
+            </li>
+            <li>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              >
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+              <span
+                ><b>Chrome Web Store yok.</b> WebView2 yalnız paketlenmemiş
+                uzantı yükleyebiliyor.</span
+              >
+            </li>
+            <li>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              >
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+              <span
+                ><b>Şifre yöneticisi yok.</b> Kimlik bilgisi saklamıyoruz;
+                işletim sistemine bırakılıyor.</span
+              >
+            </li>
+            <li>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              >
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+              <span
+                ><b>Senkronizasyon yok.</b> Sunucu yok, hesap yok, telemetri yok.
+                Her şey diskte.</span
+              >
+            </li>
+            <li>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              >
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+              <span><b>Kendi indirme motoru yok.</b> İndirme Muiget'in işi.</span>
+            </li>
+            <li>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              >
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+              <span><b>Mobil yok.</b> Masaüstü, Windows öncelikli.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ================= KURULUM ================= -->
+      <section id="kurulum" class="bolum">
+        <div class="kapsam">
+          <div class="bolum-basi">
+            <span class="etiket">Kurulum</span>
+            <h2>Windows 10 / 11, x64.</h2>
+          </div>
+
+          <div class="kurulum-kutu">
+            <ul>
+              <li><code>.exe</code> — NSIS kurulumu (önerilen, daha küçük)</li>
+              <li><code>.msi</code> — kurumsal dağıtım için</li>
+            </ul>
+
+            <div class="dugmeler">
+              <a
+                class="dugme birincil"
+                href="https://github.com/heraklessii/Muiren/releases/latest"
+              >
+                Son sürüme git
+              </a>
+              <a class="dugme" href="https://github.com/heraklessii/Muiren#geli%C5%9Ftirme">
+                Kaynaktan derle
+              </a>
+            </div>
+
+            <div class="not">
+              <span>
+                Kurulum paketleri <b>imzasız</b>: Windows SmartScreen uyarı
+                gösterecek, kod imzalama sertifikası henüz yok. WebView2 Runtime
+                Windows 11'de zaten kurulu; Windows 10'da yoksa kurulum paketi
+                indirip kuruyor.
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= AİLE ================= -->
+      <section class="bolum">
+        <div class="kapsam">
+          <div class="bolum-basi">
+            <span class="etiket">Mui ailesi</span>
+            <h2>Muiren tek başına da çalışır, ailenin içinde daha iyi.</h2>
+            <p class="bolum-alt">
+              Köprüler isteğe bağlı: kardeş uygulama kurulu değilse Muiren o
+              özelliği sessizce gizliyor, indirme önerisi zorlamıyor.
+            </p>
+          </div>
+
+          <div class="aile">
+            <a href="https://github.com/heraklessii/Muiget">
+              <b>Muiget</b><span>İndirme yöneticisi</span>
+            </a>
+            <a href="https://github.com/heraklessii/Muiwatch">
+              <b>Muiwatch</b><span>Birlikte izleme</span>
+            </a>
+            <a href="https://github.com/heraklessii/Muifly">
+              <b>Muifly</b><span>Oyun performansı</span>
+            </a>
+            <a href="https://github.com/heraklessii/Muivly">
+              <b>Muivly</b><span>Canlı duvar kağıdı</span>
+            </a>
+            <a href="https://github.com/heraklessii/MuiLabs">
+              <b>MuiLabs</b><span>Ailenin vitrini</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="kapsam alt-satir">
+        <span>Apache-2.0 · 2026 Mui</span>
+        <nav>
+          <a href="https://github.com/heraklessii/Muiren">GitHub</a>
+          <a href="https://github.com/heraklessii/Muiren/releases">Sürümler</a>
+          <a href="https://github.com/heraklessii/Muiren/issues">Sorun bildir</a>
+          <a href="https://github.com/heraklessii/Muiren/blob/main/docs/Roadmap.md">Yol haritası</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

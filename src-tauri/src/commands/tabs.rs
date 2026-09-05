@@ -15,8 +15,13 @@ use crate::tabs::{Grup, GrupId, GrupRengi, SekmeId, SekmeOzeti};
 /// genel; sabitlenen yalnız bu ince katman.
 type Durum<'a> = State<'a, Arc<Surucu<tauri::Wry>>>;
 
+// Aşağıdaki komutların `async` olması bir üslup tercihi DEĞİL: hepsinin çağrı
+// ağacı `Motor::sekme_ac`e, yani `Window::add_child`e ulaşıyor ve eşzamanlı
+// bir komuttan webview yaratmak uygulamayı kilitliyor. Gerekçenin tamamı
+// `commands` modül notunda.
+
 #[tauri::command]
-pub fn sekme_ac(
+pub async fn sekme_ac(
     surucu: Durum<'_>,
     url: Option<String>,
     ebeveyn: Option<SekmeId>,
@@ -27,12 +32,12 @@ pub fn sekme_ac(
 }
 
 #[tauri::command]
-pub fn sekme_kapat(surucu: Durum<'_>, id: SekmeId) -> Sonuc<Option<SekmeId>> {
+pub async fn sekme_kapat(surucu: Durum<'_>, id: SekmeId) -> Sonuc<Option<SekmeId>> {
     surucu.inner().sekme_kapat(id)
 }
 
 #[tauri::command]
-pub fn sekme_etkinlestir(surucu: Durum<'_>, id: SekmeId) -> Sonuc<()> {
+pub async fn sekme_etkinlestir(surucu: Durum<'_>, id: SekmeId) -> Sonuc<()> {
     surucu.inner().sekme_etkinlestir(id)
 }
 
@@ -64,7 +69,7 @@ pub fn sekme_listesi(surucu: Durum<'_>) -> Vec<SekmeOzeti> {
 }
 
 #[tauri::command]
-pub fn sekme_geri_al(surucu: Durum<'_>) -> Sonuc<Option<SekmeId>> {
+pub async fn sekme_geri_al(surucu: Durum<'_>) -> Sonuc<Option<SekmeId>> {
     surucu.inner().sekme_geri_al()
 }
 
@@ -101,9 +106,20 @@ pub fn yetenekler(surucu: Durum<'_>) -> Yetenekler {
 /// Kabuk odaktayken bu kapıdan, sayfa odaktayken motorun hızlandırıcı
 /// kaydından giriliyor — **tablo tek yerde** (`crate::kisayol`,
 /// `docs/IPC.md`).
+///
+/// Dönüş `bool` değil `Sonuc<bool>`: komut `async` (Ctrl+T sekme açıyor,
+/// yani webview yaratıyor) ve ödünç alınmış argümanı olan bir `async` komut
+/// Tauri'de `Result` döndürmek zorunda. Arayüzde fark yok — `Ok` değeri
+/// çözülüyor.
 #[tauri::command]
-pub fn kisayol_bas(surucu: Durum<'_>, tus: String, ctrl: bool, shift: bool, alt: bool) -> bool {
-    surucu.inner().kisayol_uygula(&tus, ctrl, shift, alt)
+pub async fn kisayol_bas(
+    surucu: Durum<'_>,
+    tus: String,
+    ctrl: bool,
+    shift: bool,
+    alt: bool,
+) -> Sonuc<bool> {
+    Ok(surucu.inner().kisayol_uygula(&tus, ctrl, shift, alt))
 }
 
 // ------------------------------------------------------------------ gruplar

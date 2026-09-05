@@ -88,8 +88,13 @@ pub struct Settings {
 
     // --- Kabuk ---
     /// Adres çubuğuna URL olmayan bir şey yazıldığında kullanılan şablon.
-    /// `%s` sorgunun yerini tutuyor. Varsayılan izleme yapmayan bir motor;
-    /// canlı öneri API'si kullanılmıyor (`docs/Frontend.md`).
+    /// `%s` sorgunun yerini tutuyor.
+    ///
+    /// Varsayılan Google. Muiren'in kendisi arama motoruna **hiçbir şey**
+    /// göndermiyor: canlı öneri API'si kullanılmıyor, her tuş vuruşu bir
+    /// sunucuya gitmiyor (`docs/Frontend.md`). Sorgu yalnız kullanıcı Enter'a
+    /// bastığında ve sayfanın kendi isteği olarak gidiyor. Şablon ayarlardan
+    /// değiştirilebiliyor.
     pub arama_url: String,
     pub tema: String,
     /// `-1` geçmiş tutma, `0` sınırsız, `1..=3650` gün.
@@ -158,7 +163,7 @@ pub fn varsayilan(profil: Profil) -> Settings {
         istisna_alanlari: Vec::new(),
         surec_politikasi: SurecPolitikasi::Birlesik,
         renderer_tavani: 0,
-        arama_url: "https://duckduckgo.com/?q=%s".into(),
+        arama_url: "https://www.google.com/search?q=%s".into(),
         tema: "Mui".into(),
         gecmis_saklama_gun: 90,
         // Muiget kurulu değilse bu seçim arayüzde görünmüyor bile; kuruluysa

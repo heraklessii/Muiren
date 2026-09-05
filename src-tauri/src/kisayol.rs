@@ -60,6 +60,16 @@ pub enum Kisayol {
 }
 
 impl Kisayol {
+    /// Bu kısayol kabukta bir **girdiye** odaklanıyor mu?
+    ///
+    /// Ayrı bir soru çünkü her arayüz işi klavye istemiyor: bellek paneli ya
+    /// da tam ekran açıldığında odağın sayfada kalması doğru. Adres çubuğu ve
+    /// sekme arama kutusu ise yazı bekliyor ve sayfa odaktayken kabuğun
+    /// `focus()` çağrısı tek başına yetmiyor (`Motor::kabuk_odakla`).
+    pub fn odak_ister(self) -> bool {
+        matches!(self, Kisayol::AdresOdak | Kisayol::SekmeArama)
+    }
+
     /// Bu eylemi arayüz mü yapıyor?
     ///
     /// Sayfa odaktayken backend eylemleri doğrudan uygulanıyor, arayüz işleri

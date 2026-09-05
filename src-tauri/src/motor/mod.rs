@@ -317,6 +317,16 @@ pub trait Motor<R: Runtime>: Send + Sync + 'static {
     fn alan_ayarla(&self, dikdortgen: Dikdortgen) -> Sonuc<()>;
     fn goster(&self, id: SekmeId, dikdortgen: Dikdortgen) -> Sonuc<()>;
     fn gizle(&self, id: SekmeId) -> Sonuc<()>;
+
+    /// Klavyeyi **kabuğa** verir.
+    ///
+    /// Sekme webview'i ayrı bir native pencere ve odak da ayrı: sayfa
+    /// odaktayken kabuğun `input.focus()` çağrısı hiçbir tuşu geri
+    /// getirmiyor. Ctrl+L adres çubuğunu düzenleme kipine sokuyor, kullanıcı
+    /// yazıyor ve harfler **sayfaya** gidiyor — belirtisi "adres çubuğu
+    /// yazmıyor". Kabuğa iş düşen her yol (adres odağı, tam ekran örtü)
+    /// buradan geçiyor.
+    fn kabuk_odakla(&self) -> Sonuc<()>;
     /// Sekmenin sesini kapatır/açar. Sessize alınan sekme uyku korumasını
     /// kaybediyor — kararı sürücü veriyor, motor yalnız uyguluyor.
     fn ses_kes(&self, id: SekmeId, sessiz: bool) -> Sonuc<()>;

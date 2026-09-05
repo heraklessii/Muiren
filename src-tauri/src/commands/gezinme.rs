@@ -19,8 +19,10 @@ type Durum<'a> = State<'a, Arc<Surucu<tauri::Wry>>>;
 /// URL mi arama mı ayrımı arayüzde yapılıyor (`src/lib/url.ts`) çünkü kullanıcı
 /// yazarken canlı geri bildirim gerekiyor; backend gelen dizeyi yine de
 /// doğruluyor (`docs/IPC.md`).
+/// `async`: boş bir sekmede gezinmek webview yaratıyor ve eşzamanlı bir
+/// komuttan yaratmak uygulamayı kilitliyor (`commands` modül notu).
 #[tauri::command]
-pub fn gezin(surucu: Durum<'_>, id: SekmeId, girdi: String) -> Sonuc<()> {
+pub async fn gezin(surucu: Durum<'_>, id: SekmeId, girdi: String) -> Sonuc<()> {
     surucu.inner().gezin(id, girdi)
 }
 

@@ -51,6 +51,104 @@ pub fn kabuk_sayfasi(url: &str) -> bool {
     url.starts_with("muiren://")
 }
 
+/// Adres çubuğundan gezinilebilen şemalar. Listede olmayan her şey **arama**.
+///
+/// `javascript:` ve `data:` bilerek dışarıda: ikisi de kullanıcıya "şunu
+/// adres çubuğuna yapıştır" dedirten saldırıların taşıyıcısı. Hata vermek
+/// yerine aramaya düşüyorlar — kullanıcının yapıştırdığı metin bir arama
+/// sonucu üretiyor, sayfada kod çalıştırmıyor.
+const IZINLI_SEMALAR: [&str; 3] = ["http", "https", "file"];
+
+/// Girdinin başındaki şema (`https`, `file`, `javascript`…).
+///
+/// `konak:port` yazımını şema **saymıyor**: `localhost:3000` geçerli bir şema
+/// deseni ve ayırt edilmezse geliştiricinin en çok yazdığı adres aramaya
+/// giderdi. Ayıran şey iki nokta üst üsteden sonra yalnız rakam olması.
+pub fn sema_oneki(metin: &str) -> Option<String> {
+    let iki_nokta = metin.find(':')?;
+    let sema = &metin[..iki_nokta];
+    let mut harfler = sema.chars();
+    if !harfler.next().is_some_and(|c| c.is_ascii_alphabetic()) {
+        return None;
+    }
+    if !harfler.all(|c| c.is_ascii_alphanumeric() || c == '+' || c == '-' || c == '.') {
+        return None;
+    }
+    // `konak:port` mu?
+    let kalan = &metin[iki_nokta + 1..];
+    let rakamlar = kalan.len() - kalan.trim_start_matches(|c: char| c.is_ascii_digit()).len();
+    if rakamlar > 0 {
+        let sonrasi = kalan[rakamlar..].chars().next();
+        if matches!(sonrasi, None | Some('/') | Some('?') | Some('#')) {
+            return None;
+        }
+    }
+    Some(sema.to_ascii_lowercase())
+}
+
+/// Nokta ile ayrılmış dört sayı — `192.168.1.5`.
+fn ipv4_mi(konak: &str) -> bool {
+    let mut parca = 0;
+    for p in konak.split('.') {
+        if p.is_empty() || p.len() > 3 || !p.bytes().all(|b| b.is_ascii_digit()) {
+            return false;
+        }
+        parca += 1;
+    }
+    parca == 4
+}
+
+/// Kullanıcının yazdığı şey adres mi, arama mı.
+///
+/// Aynı ayrım arayüzde de var (`src/lib/url.ts`, `adresMi`) ama oradaki kopya
+/// **yalnız canlı geri bildirim** için: kullanıcı yazarken kilit/vurgu
+/// çiziliyor. Motora ne gideceğine karar veren yer burası — kabuk kapalıyken
+/// de (oturum geri yükleme, köprü, kısayol) doğru çalışmak zorunda
+/// (CLAUDE.md, "karar veren kod backend'de").
+///
+/// `?` ile başlayan girdi **zorla arama**: `localhost` gibi belirsiz
+/// durumlarda kullanıcının tek çıkış yolu bu.
+pub fn adres_mi(girdi: &str) -> bool {
+    let metin = girdi.trim();
+    if metin.is_empty() || metin.starts_with('?') {
+        return false;
+    }
+    if let Some(sema) = sema_oneki(metin) {
+        return IZINLI_SEMALAR.contains(&sema.as_str());
+    }
+    // Boşluk varsa arama. `ornek com` bir adres değil.
+    if metin.chars().any(char::is_whitespace) {
+        return false;
+    }
+
+    let otorite = metin.split(['/', '?', '#']).next().unwrap_or("");
+    let konak = match otorite.rsplit_once('@') {
+        Some((_, k)) => k,
+        None => otorite,
+    };
+    // Port yalnız rakamsa atılıyor; `ornek.com:sayfa` zaten adres değil.
+    let konak = match konak.rsplit_once(':') {
+        Some((k, port)) if !port.is_empty() && port.bytes().all(|b| b.is_ascii_digit()) => k,
+        _ => konak,
+    };
+
+    if konak.eq_ignore_ascii_case("localhost") {
+        return true;
+    }
+    if ipv4_mi(konak) {
+        return true;
+    }
+
+    let etiketler: Vec<&str> = konak.split('.').collect();
+    if etiketler.len() < 2 {
+        return false;
+    }
+    // Üst düzey alan adı harf ve en az iki karakter; `1.2` ya da `sürüm.3`
+    // adres değil.
+    let son = etiketler[etiketler.len() - 1];
+    son.chars().count() >= 2 && son.chars().all(char::is_alphabetic)
+}
+
 /// Sekme başlığının üst sınırı. `document.title` saldırganın yazdığı bir dize;
 /// sınırsız uzunlukta bir başlık sekme çubuğunu ve oturum dosyasını şişirir.
 const BASLIK_SINIRI: usize = 200;
@@ -594,6 +692,61 @@ impl Depo {
 #[cfg(test)]
 mod testler {
     use super::*;
+
+    #[test]
+    fn semasiz_alan_adi_adres() {
+        assert!(adres_mi("ornek.com"));
+        assert!(adres_mi("www.ornek.com.tr/yol?a=1"));
+        assert!(adres_mi("ornek.com:8080/yol"));
+    }
+
+    #[test]
+    fn semali_adres() {
+        assert!(adres_mi("https://ornek.com"));
+        assert!(adres_mi("http://ornek.com"));
+        assert!(adres_mi("file:///C:/bir.html"));
+    }
+
+    #[test]
+    fn localhost_ve_ip_adres() {
+        assert!(adres_mi("localhost"));
+        assert!(adres_mi("localhost:1420"));
+        assert!(adres_mi("127.0.0.1:8080/yol"));
+    }
+
+    #[test]
+    fn bosluklu_ve_tek_kelime_arama() {
+        assert!(!adres_mi("rust kitabı"));
+        assert!(!adres_mi("muiren"));
+        assert!(!adres_mi("1.2"));
+        assert!(!adres_mi(""));
+    }
+
+    #[test]
+    fn soru_isareti_zorla_arama() {
+        // `localhost` gibi belirsiz bir girdiyi aratmanın tek yolu.
+        assert!(!adres_mi("?localhost"));
+        assert!(!adres_mi("?ornek.com"));
+    }
+
+    #[test]
+    fn tehlikeli_sema_adres_degil() {
+        // Adres sayılmıyor, yani aramaya düşüyor: sayfada kod çalışmıyor.
+        assert!(!adres_mi("javascript:alert(1)"));
+        assert!(!adres_mi("data:text/html,<script>x</script>"));
+    }
+
+    #[test]
+    fn sema_oneki_konak_portu_ayiriyor() {
+        assert_eq!(sema_oneki("https://ornek.com").as_deref(), Some("https"));
+        assert_eq!(
+            sema_oneki("javascript:alert(1)").as_deref(),
+            Some("javascript")
+        );
+        assert_eq!(sema_oneki("localhost:3000"), None);
+        assert_eq!(sema_oneki("localhost:3000/yol"), None);
+        assert_eq!(sema_oneki("ornek.com"), None);
+    }
 
     #[test]
     fn baslik_kirpiliyor() {

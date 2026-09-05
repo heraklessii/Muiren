@@ -10,8 +10,10 @@
  * `apple.com` ekranda ayırt edilemiyor — o yüzden Latin dışı harf taşıyan
  * alan adları punycode gösteriliyor.
  *
- * Ayrım burada, arayüzde, çünkü kullanıcı yazarken canlı geri bildirim
- * gerekiyor. Backend gelen dizeyi yine de doğruluyor (`docs/IPC.md`).
+ * Birinci sorunun cevabı burada **yalnız çizim için**: kilit simgesi ve alan
+ * adı vurgusu kullanıcı yazarken anında güncellenmek zorunda. Motora ne
+ * gideceğine karar veren yer backend (`tabs::adres_mi`, `docs/IPC.md`) —
+ * adres çubuğu tek kapı değil ve karar kabuk kapalıyken de verilebilmeli.
  */
 
 export type Cozum =

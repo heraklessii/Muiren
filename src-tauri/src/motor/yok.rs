@@ -109,6 +109,10 @@ impl<R: Runtime> Motor<R> for YokMotor<R> {
         Ok(())
     }
 
+    fn kabuk_odakla(&self) -> Sonuc<()> {
+        Ok(())
+    }
+
     fn ses_kes(&self, _id: SekmeId, _sessiz: bool) -> Sonuc<()> {
         Ok(())
     }

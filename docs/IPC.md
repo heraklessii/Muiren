@@ -93,9 +93,32 @@ korunuyor. Ölçeklenmeseydi "1 dakikada uyusun" diyen grubun sekmeleri
 | `gezin` | `id: SekmeId`, `girdi: String` | `()` |
 | `geri` / `ileri` / `yenile` / `durdur` | `id: SekmeId` | `()` |
 
-`gezin` komutunun `girdi` alanı ham kullanıcı metni. URL mi arama mı ayrımı
-**arayüzde** yapılıyor (`src/lib/url.ts`, saf ve testli) çünkü kullanıcı yazarken
-canlı geri bildirim gerekiyor; backend gelen dizeyi yine de doğruluyor.
+`gezin` komutunun `girdi` alanı ham kullanıcı metni. URL mi arama mı ayrımını
+**backend** veriyor: `tabs::adres_mi` (saf ve testli). Şemasız yazılan adres
+`https`e tamamlanıyor (`ornek.com` → `https://ornek.com/`), adres olmayan metin
+arama şablonuna giriyor (`arama_url`, varsayılan Google), `?` öneki zorla arama.
+
+Ayrımın arayüzde de bir kopyası var (`src/lib/url.ts`, `adresMi`) ama onun işi
+**yalnız canlı geri bildirim**: kullanıcı yazarken kilit simgesi ve alan adı
+vurgusu çiziliyor. Karar orada verilseydi bu kapıdan geçen öteki çağrılar
+(oturum geri yükleme, köprüler, kısayollar) kabuk kapalıyken yanlış çalışırdı
+(CLAUDE.md, "karar veren kod backend'de").
+
+### Webview yaratabilen komut `async`
+
+`gezin`, `sekme_ac`, `sekme_kapat`, `sekme_etkinlestir`, `sekme_geri_al` ve
+`kisayol_bas` `async fn` olarak tanımlı. Bu bir üslup tercihi değil: eşzamanlı
+bir Tauri komutu ana iş parçacığında **ve kabuk webview'inin geri çağrısının
+içinde** koşuyor; oradan webview yaratmak (`Window::add_child`) uygulamayı
+kilitliyor — WebView2 kendi geri çağrısının içindeyken ikinci bir geri çağrıyı
+teslim etmiyor ve wry'nin beklediği cevap hiç gelmiyor. Belirtisi: pencere
+boyanmaya devam ediyor, Windows "yanıt veriyor" diyor, arayüz ölü. Motorun
+kendi olay geri çağrıları aynı tuzağa `std::thread::spawn` ile karşı koyuyor
+(`Dinleyici::yeni_pencere`, `Dinleyici::kisayol`).
+
+Sıra garantisi gereken komutlar (`icerik_alani`, `ortu_gorunur`) bilerek
+eşzamanlı: ikisi de webview yaratmıyor ve `async` olsalardı iki ardışık çağrı
+birbirini geçebilirdi.
 
 ## Komutlar — Bellek
 
@@ -231,7 +254,7 @@ boş cevap veriyor — yer imi tutamayan bir tarayıcı hâlâ gezinebilmeli.
 |---|---|---|---|
 | `icerik_alani` | `alan: Dikdortgen` | `()` | kabuğun altında kalan bölge |
 | `yetenekler` | — | `Yetenekler` | motorun gerçekten desteklediği çağrılar |
-| `kisayol_bas` | `tus: String`, `ctrl: bool`, `shift: bool`, `alt: bool` | `bool` | dönüş: kısayol tanındı mı |
+| `kisayol_bas` | `tus: String`, `ctrl: bool`, `shift: bool`, `alt: bool` | `Sonuc<bool>` | dönüş: kısayol tanındı mı; `async` olduğu için `Result` |
 | `ortu_gorunur` | `acik: bool` | `()` | tam ekran örtü açıldı/kapandı |
 
 ### `ortu_gorunur` — örtü açıkken sekme webview'i gizleniyor

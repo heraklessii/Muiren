@@ -895,6 +895,16 @@ impl<R: Runtime> Motor<R> for WebView2Motor<R> {
         Ok(())
     }
 
+    fn kabuk_odakla(&self) -> Sonuc<()> {
+        let kabuk = self
+            .app
+            .get_webview(super::KABUK)
+            .ok_or_else(|| MuirenHata::Motor("kabuk webview yok".into()))?;
+        kabuk
+            .set_focus()
+            .map_err(|e| MuirenHata::Motor(e.to_string()))
+    }
+
     fn gizle(&self, id: SekmeId) -> Sonuc<()> {
         // Kapanmış bir sekmeyi gizlemek hata değil: gözcü ile arayüz arasında
         // gecikme var.

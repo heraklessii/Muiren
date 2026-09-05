@@ -565,10 +565,13 @@ impl<R: Runtime> Surucu<R> {
 
     /// Ham kullanıcı metnini adrese çevirir.
     ///
-    /// URL mi arama mı ayrımı **arayüzde** yapılıyor (`src/lib/url.ts`) çünkü
-    /// kullanıcı yazarken canlı geri bildirim gerekiyor. Backend gelen dizeyi
-    /// yine de doğruluyor (`docs/IPC.md`): arayüzdeki bir hata yüzünden
-    /// motora geçersiz bir adres gitmesin.
+    /// Ayrımı [`adres_mi`] veriyor: **saf ve testli** (`tabs/mod.rs`). Aynı
+    /// ayrımın arayüzdeki kopyası (`src/lib/url.ts`) yalnız canlı geri
+    /// bildirim çiziyor; motora ne gideceğine karar veren yer burası, çünkü
+    /// bu kapıdan kabuk kapalıyken de geçiliyor (oturum, köprü, kısayol).
+    ///
+    /// Şemasız yazılan adres `https`e tamamlanıyor: kullanıcı `ornek.com`
+    /// yazdığında oraya gitmesi gerekiyor, o metni aratmak değil.
     fn coz_adres(&self, girdi: &str) -> Sonuc<String> {
         let girdi = girdi.trim();
         if girdi.is_empty() {
@@ -577,17 +580,25 @@ impl<R: Runtime> Surucu<R> {
         if kabuk_sayfasi(girdi) {
             return Ok(girdi.to_string());
         }
-        if let Ok(u) = url::Url::parse(girdi) {
+
+        if super::adres_mi(girdi) {
+            let tam = if super::sema_oneki(girdi).is_some() {
+                girdi.to_string()
+            } else {
+                format!("https://{girdi}")
+            };
+            let u = url::Url::parse(&tam)?;
             return match u.scheme() {
                 "http" | "https" | "file" => Ok(u.to_string()),
-                // `javascript:` ve `data:` adres çubuğundan geçmiyor: ikisi de
-                // kullanıcıya "şunu adres çubuğuna yapıştır" dedirten
-                // saldırıların taşıyıcısı.
                 _ => Err(MuirenHata::GecersizAdres(girdi.to_string())),
             };
         }
+
+        // Arama. `?` öneki "bu bir adres değil" demenin yolu; şablona
+        // girmeden atılıyor.
+        let sorgu = girdi.strip_prefix('?').unwrap_or(girdi).trim();
         let sablon = self.ayarlar.lock().unwrap().arama_url.clone();
-        Ok(sablon.replace("%s", &urlencode(girdi)))
+        Ok(sablon.replace("%s", &urlencode(sorgu)))
     }
 
     pub fn gezin(self: &Arc<Self>, id: SekmeId, girdi: String) -> Sonuc<()> {
@@ -674,6 +685,10 @@ impl<R: Runtime> Surucu<R> {
         };
         if ortu_acik {
             let _ = self.motor.gizle(id);
+            // Örtünün kendi girdileri var (ayarlar alanları, sekme arama
+            // kutusu). Sayfa gizlenince odak kendiliğinden kabuğa geçmiyor;
+            // `kisayol_uygula` ile aynı gerekçe.
+            let _ = self.motor.kabuk_odakla();
             Ok(())
         } else {
             let alan = *self.alan.lock().unwrap();
@@ -1240,6 +1255,14 @@ impl<R: Runtime> Surucu<R> {
         };
 
         if k.arayuz_isi() {
+            // Klavyeyi önce kabuğa al: bu kısayollar kabukta bir alana
+            // odaklanıyor (adres çubuğu, sekme arama kutusu) ve sayfa
+            // odaktayken kabuğun `focus()` çağrısı tuşları geri getirmiyor.
+            // Bu satır olmadan Ctrl+L adres çubuğunu açıyor ama yazılan her
+            // harf sayfaya gidiyor (`Motor::kabuk_odakla`).
+            if k.odak_ister() {
+                let _ = self.motor.kabuk_odakla();
+            }
             let _ = self.app.emit(olaylar::KISAYOL, KisayolOlayi { is: k });
             return true;
         }

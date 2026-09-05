@@ -3,7 +3,7 @@ name = "muiren"
 version = "0.1.0"
 description = "Cok sekmede az RAM harcayan masaustu web tarayicisi"
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.82.0"
 license = "Apache-2.0"
 
 [lib]

@@ -71,8 +71,8 @@ mod win {
         PROCESS_QUERY_LIMITED_INFORMATION, REALTIME_PRIORITY_CLASS,
     };
     use windows::Win32::UI::WindowsAndMessaging::{
-        GetForegroundWindow, GetWindowLongPtrW, GetWindowRect, GetWindowThreadProcessId,
-        GWL_STYLE, WS_CAPTION, WS_THICKFRAME,
+        GetForegroundWindow, GetWindowLongPtrW, GetWindowRect, GetWindowThreadProcessId, GWL_STYLE,
+        WS_CAPTION, WS_THICKFRAME,
     };
 
     use super::OnPlan;

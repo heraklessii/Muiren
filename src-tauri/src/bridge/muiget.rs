@@ -319,7 +319,10 @@ mod testler {
             serde_json::from_slice(&serde_json::to_vec(&istek).unwrap()).unwrap();
 
         assert!(json.get("cookies").is_none(), "çerez gönderiliyor");
-        assert!(json.get("userAgent").is_none(), "oturum başlığı gönderiliyor");
+        assert!(
+            json.get("userAgent").is_none(),
+            "oturum başlığı gönderiliyor"
+        );
         // Boş `fileName` de gönderilmiyor: Muiget `Option` bekliyor ve
         // `null` göndermek adı "bilmiyoruz" değil "yok" yapardı.
         assert!(json.get("fileName").is_none());
@@ -340,7 +343,10 @@ mod testler {
         ));
 
         let ret = cerceve(r#"{"type":"rejected","reason":"desteklenmeyen şema"}"#);
-        assert!(matches!(yaniti_oku(&ret[..]).unwrap(), Yanit::Rejected { .. }));
+        assert!(matches!(
+            yaniti_oku(&ret[..]).unwrap(),
+            Yanit::Rejected { .. }
+        ));
     }
 
     #[test]

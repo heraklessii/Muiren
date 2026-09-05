@@ -967,13 +967,10 @@ impl<R: Runtime> Surucu<R> {
         katli: Option<bool>,
         uyku_esigi_sn: Option<Option<u64>>,
     ) {
-        self.depo.lock().unwrap().grup_guncelle(
-            id,
-            ad.as_deref(),
-            renk,
-            katli,
-            uyku_esigi_sn,
-        );
+        self.depo
+            .lock()
+            .unwrap()
+            .grup_guncelle(id, ad.as_deref(), renk, katli, uyku_esigi_sn);
         // Liste yayınlanıyor çünkü `SekmeOzeti.katli` ve
         // `grup_uyku_esigi_sn` her sekmede türetiliyor: grup değişince
         // sekmelerin özeti de değişiyor.
@@ -1011,7 +1008,9 @@ impl<R: Runtime> Surucu<R> {
     ) -> Sonuc<()> {
         self.kopruler.muiget.devret(Yuk::Indirme {
             url,
-            dosya_adi: dosya_adi.as_deref().and_then(crate::bridge::dosya_adi_temizle),
+            dosya_adi: dosya_adi
+                .as_deref()
+                .and_then(crate::bridge::dosya_adi_temizle),
             kaynak_sayfa,
         })
     }
@@ -1607,11 +1606,11 @@ impl<R: Runtime> Dinleyici for Surucu<R> {
         // Bu olay üç yerden geliyor (uyanma, sekmeden çıkış, uyku öncesi) ve
         // yalnız ilkinde açık bir `Uyuyan` kronometresi bulunuyor; diğer
         // ikisinde `bitir` eşleşme bulamayıp `None` dönüyor.
-        if let Some(ms) = self
-            .gecikme
-            .lock()
-            .unwrap()
-            .bitir(id, gecikme::Kaynak::Uyuyan, Instant::now())
+        if let Some(ms) =
+            self.gecikme
+                .lock()
+                .unwrap()
+                .bitir(id, gecikme::Kaynak::Uyuyan, Instant::now())
         {
             log::debug!("muiren: sekme {id} uykudan {ms} ms'de döndü");
         }
@@ -1722,9 +1721,9 @@ impl<R: Runtime> Dinleyici for Surucu<R> {
         if kabuk_sayfasi(url) {
             return true;
         }
-        let Some(sebep) =
-            self.engelleyici
-                .gezinme_engelli_mi(url, kullanici_baslatti, yonlendirme)
+        let Some(sebep) = self
+            .engelleyici
+            .gezinme_engelli_mi(url, kullanici_baslatti, yonlendirme)
         else {
             // Yeni sayfaya geçiliyor: rozet **bu sayfada** kaç istek
             // engellendiğini gösteriyor, sekmenin ömrü boyunca kaçını

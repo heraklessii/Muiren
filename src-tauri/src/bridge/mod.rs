@@ -171,7 +171,10 @@ fn kayittan_ara(urun: &str, ikili: &str) -> Option<PathBuf> {
             let ikon = ikon.split(',').next().unwrap_or("").trim_matches('"');
             if !ikon.is_empty() {
                 let aday = PathBuf::from(ikon);
-                if aday.is_file() && aday.file_name().is_some_and(|a| a.eq_ignore_ascii_case(ikili))
+                if aday.is_file()
+                    && aday
+                        .file_name()
+                        .is_some_and(|a| a.eq_ignore_ascii_case(ikili))
                 {
                     return Some(aday);
                 }
@@ -361,7 +364,10 @@ pub fn calistir(ikili: &Path, argumanlar: &[&str]) -> Sonuc<()> {
         // parlatmasın.
         komut.creation_flags(0x0800_0000);
     }
-    komut.spawn().map(|_| ()).map_err(crate::hata::MuirenHata::from)
+    komut
+        .spawn()
+        .map(|_| ())
+        .map_err(crate::hata::MuirenHata::from)
 }
 
 // Bu modülün veri dizinine ihtiyacı **yok** ve bir kanal da açılmıyor:
@@ -397,7 +403,10 @@ mod testler {
     fn surucu_oneki_ayiriciyi_atlatamiyor() {
         // `C:sahte.txt` Windows'ta "C sürücüsünün geçerli dizini" demek;
         // ayırıcı olmadığı için yol ayırıcı süzgecine takılmıyor.
-        assert_eq!(dosya_adi_temizle("C:sahte.txt").as_deref(), Some("sahte.txt"));
+        assert_eq!(
+            dosya_adi_temizle("C:sahte.txt").as_deref(),
+            Some("sahte.txt")
+        );
     }
 
     #[test]

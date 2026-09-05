@@ -26,10 +26,11 @@ use serde::{Deserialize, Serialize};
 use super::GrupId;
 
 /// Grup rengi. Arayüzdeki jetonlara eşleniyor (`src/styles.css`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum GrupRengi {
     /// Aile vurgusu. Varsayılan.
+    #[default]
     Teal,
     Mor,
     Kehribar,
@@ -37,12 +38,6 @@ pub enum GrupRengi {
     Yesil,
     Mavi,
     Gri,
-}
-
-impl Default for GrupRengi {
-    fn default() -> Self {
-        GrupRengi::Teal
-    }
 }
 
 /// Grup adının üst sınırı. Ad kullanıcıdan geliyor ve sekme çubuğunda bir

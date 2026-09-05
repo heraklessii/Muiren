@@ -385,7 +385,9 @@ fn oyun_penceresi<R: Runtime>(surucu: &Surucu<R>, acik: bool) {
         bayrak.store(true, Ordering::Relaxed);
         // Bayrağı burada çeviriyoruz, `Resized` olayını beklemeden: gözcü
         // bir sonraki satırda baskıyı hesaplıyor ve olay ona yetişmiyor.
-        surucu.pencere_gizli_bayragi().store(true, Ordering::Relaxed);
+        surucu
+            .pencere_gizli_bayragi()
+            .store(true, Ordering::Relaxed);
     } else {
         if let Err(e) = pencere.unminimize() {
             // Bayrak **duruyor**: bir sonraki tur yeniden deniyor. Sıfırlamak,

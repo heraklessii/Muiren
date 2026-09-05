@@ -64,14 +64,20 @@ pub fn olustur(plan: &Plan, ortam: &Ortam, ornekler: &[Ornek], notlar: &[String]
 
     m.push_str("| Alan | Değer |\n|---|---|\n");
     m.push_str(&format!("| Tarih | {} |\n", ortam.tarih));
-    m.push_str(&format!("| Makine | {} · işlemci modeli: ? |\n", ortam.isletim));
+    m.push_str(&format!(
+        "| Makine | {} · işlemci modeli: ? |\n",
+        ortam.isletim
+    ));
     m.push_str(&format!(
         "| WebView2 Runtime | {} |\n",
         ortam.webview2.as_deref().unwrap_or(ELLE)
     ));
     m.push_str(&format!("| Muiren | {} · derleme: ? |\n", ortam.muiren));
     m.push_str(&format!("| Bellek profili | {} |\n", ortam.profil));
-    m.push_str(&format!("| Süreç politikası | {} |\n", ortam.surec_politikasi));
+    m.push_str(&format!(
+        "| Süreç politikası | {} |\n",
+        ortam.surec_politikasi
+    ));
     m.push_str(&format!("| Ağ | {ELLE} |\n"));
     m.push_str(&format!("| Karşılaştırılan | {ELLE} |\n\n"));
 
@@ -85,7 +91,9 @@ pub fn olustur(plan: &Plan, ortam: &Ortam, ornekler: &[Ornek], notlar: &[String]
     // Boş tarayıcı: **mutlak** bir hedef, dolayısıyla otomatik yargılanabiliyor.
     // Aşağıdaki üç satır Chrome'a göreli ve o sütun elle doluyor; "geçti"
     // yazmak, karşılaştırma yapılmadan verilmiş bir karar olurdu.
-    let bos_mb = bos.and_then(|o| o.ozet.as_ref()).map(|o| o.toplam_mb + o.kabuk_mb);
+    let bos_mb = bos
+        .and_then(|o| o.ozet.as_ref())
+        .map(|o| o.toplam_mb + o.kabuk_mb);
     let bos_gecerli = bos.map(|o| o.gecerli).unwrap_or(false);
     m.push_str(&format!(
         "| Boş tarayıcı | < 150 MB | {}{} | — | {} |\n",
@@ -102,17 +110,25 @@ pub fn olustur(plan: &Plan, ortam: &Ortam, ornekler: &[Ornek], notlar: &[String]
     m.push_str(&format!(
         "| {} sekme, hemen sonra | Chrome'un altında | {} | {ELLE} | {ELLE} |\n",
         plan.adresler.len(),
-        mb(acildi.and_then(|o| o.ozet.as_ref()).map(|o| o.toplam_mb + o.kabuk_mb)),
+        mb(acildi
+            .and_then(|o| o.ozet.as_ref())
+            .map(|o| o.toplam_mb + o.kabuk_mb)),
     ));
     m.push_str(&format!(
         "| Render süreç sayısı | Chrome'un yarısı | {} | {ELLE} | {ELLE} |\n",
-        sayi(acildi.and_then(|o| o.ozet.as_ref()).map(|o| o.surec_sayisi as u64)),
+        sayi(
+            acildi
+                .and_then(|o| o.ozet.as_ref())
+                .map(|o| o.surec_sayisi as u64)
+        ),
     ));
     m.push_str(&format!(
         "| {} sekme, {} dk boşta | Chrome'un yarısı | {} | {ELLE} | {ELLE} |\n",
         plan.adresler.len(),
         plan.bosta_sn / 60,
-        mb(bosta.and_then(|o| o.ozet.as_ref()).map(|o| o.toplam_mb + o.kabuk_mb)),
+        mb(bosta
+            .and_then(|o| o.ozet.as_ref())
+            .map(|o| o.toplam_mb + o.kabuk_mb)),
     ));
 
     // Kabul tablosunun son iki satırı (uyanma gecikmeleri) buraya **hiç
@@ -310,7 +326,10 @@ mod testler {
             gecerli: true,
         }];
         let m = olustur(&plan(), &ortam(), &ornekler, &[]);
-        assert!(m.contains("**hayır**"), "eşiği geçmeyen satır öyle yazılmalı");
+        assert!(
+            m.contains("**hayır**"),
+            "eşiği geçmeyen satır öyle yazılmalı"
+        );
     }
 
     #[test]
@@ -342,7 +361,10 @@ mod testler {
             gecerli: false,
         }];
         let m = olustur(&plan(), &ortam(), &ornekler, &[]);
-        assert!(m.contains("418 MB (geçersiz)"), "rakam siliniyor değil, işaretleniyor");
+        assert!(
+            m.contains("418 MB (geçersiz)"),
+            "rakam siliniyor değil, işaretleniyor"
+        );
         assert!(!m.contains("**hayır**"));
         assert!(m.contains("| Boş tarayıcı | < 150 MB | 418 MB (geçersiz) | — | ölçülemedi |"));
     }

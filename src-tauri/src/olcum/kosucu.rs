@@ -61,8 +61,7 @@ pub fn baslat<R: Runtime>(surucu: &Arc<Surucu<R>>, yol: PathBuf) {
 
 fn oku(yol: &Path) -> Result<Plan, String> {
     let veri = std::fs::read(yol).map_err(|e| e.to_string())?;
-    let ham: Plan =
-        serde_json::from_slice(crate::bom_kirp(&veri)).map_err(|e| e.to_string())?;
+    let ham: Plan = serde_json::from_slice(crate::bom_kirp(&veri)).map_err(|e| e.to_string())?;
     Ok(plan::duzelt(ham))
 }
 
@@ -114,7 +113,10 @@ fn kos<R: Runtime>(surucu: &Arc<Surucu<R>>, p: Plan, cikti: PathBuf) {
         }
         std::thread::sleep(Duration::from_millis(p.acilis_araligi_ms));
     }
-    eprintln!("muiren: {acilan} sekme açıldı, {} sn yerleşme.", p.yerlesme_sn);
+    eprintln!(
+        "muiren: {acilan} sekme açıldı, {} sn yerleşme.",
+        p.yerlesme_sn
+    );
 
     bekle(p.yerlesme_sn);
     ornekler.push(olc(surucu, Asama::Acildi, true));
@@ -134,7 +136,10 @@ fn kos<R: Runtime>(surucu: &Arc<Surucu<R>>, p: Plan, cikti: PathBuf) {
         Err(e) => {
             // Rapor yazılamadıysa sayılar **kaybolmuyor**: 15 dakika bekleyen
             // bir koşunun sonucunu bir dosya izni yüzünden çöpe atmak olurdu.
-            eprintln!("muiren: rapor yazılamadı ({}): {e}\n{metin}", cikti.display());
+            eprintln!(
+                "muiren: rapor yazılamadı ({}): {e}\n{metin}",
+                cikti.display()
+            );
         }
     }
 

@@ -29,13 +29,11 @@ use std::sync::{Arc, Mutex, Weak};
 use tauri::{AppHandle, LogicalPosition, LogicalSize, Manager, Runtime, WebviewUrl};
 use webview2_com::Microsoft::Web::WebView2::Win32::{
     GetAvailableCoreWebView2BrowserVersionString, ICoreWebView2, ICoreWebView2Environment13,
-    ICoreWebView2FrameInfo2,
-    ICoreWebView2ProcessExtendedInfoCollection, ICoreWebView2Profile2, ICoreWebView2_13,
-    ICoreWebView2_15, ICoreWebView2_19, ICoreWebView2_2, ICoreWebView2_20, ICoreWebView2_3,
-    ICoreWebView2_4, ICoreWebView2_8, COREWEBVIEW2_BROWSING_DATA_KINDS,
-    COREWEBVIEW2_BROWSING_DATA_KINDS_ALL_DOM_STORAGE,
-    COREWEBVIEW2_BROWSING_DATA_KINDS_COOKIES, COREWEBVIEW2_BROWSING_DATA_KINDS_DISK_CACHE,
-    COREWEBVIEW2_BROWSING_DATA_KINDS_GENERAL_AUTOFILL,
+    ICoreWebView2FrameInfo2, ICoreWebView2ProcessExtendedInfoCollection, ICoreWebView2Profile2,
+    ICoreWebView2_13, ICoreWebView2_15, ICoreWebView2_19, ICoreWebView2_2, ICoreWebView2_20,
+    ICoreWebView2_3, ICoreWebView2_4, ICoreWebView2_8, COREWEBVIEW2_BROWSING_DATA_KINDS,
+    COREWEBVIEW2_BROWSING_DATA_KINDS_ALL_DOM_STORAGE, COREWEBVIEW2_BROWSING_DATA_KINDS_COOKIES,
+    COREWEBVIEW2_BROWSING_DATA_KINDS_DISK_CACHE, COREWEBVIEW2_BROWSING_DATA_KINDS_GENERAL_AUTOFILL,
     COREWEBVIEW2_BROWSING_DATA_KINDS_SERVICE_WORKERS, COREWEBVIEW2_FAVICON_IMAGE_FORMAT_PNG,
     COREWEBVIEW2_KEY_EVENT_KIND_KEY_DOWN, COREWEBVIEW2_KEY_EVENT_KIND_SYSTEM_KEY_DOWN,
     COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL,
@@ -45,10 +43,11 @@ use webview2_com::{
     take_pwstr, AcceleratorKeyPressedEventHandler, ClearBrowsingDataCompletedHandler,
     ContainsFullScreenElementChangedEventHandler, DocumentTitleChangedEventHandler,
     DownloadStartingEventHandler, ExecuteScriptCompletedHandler, FaviconChangedEventHandler,
-    GetFaviconCompletedHandler, GetProcessExtendedInfosCompletedHandler, HistoryChangedEventHandler,
-    IsDocumentPlayingAudioChangedEventHandler, NavigationCompletedEventHandler,
-    NavigationStartingEventHandler, NewWindowRequestedEventHandler, SourceChangedEventHandler,
-    TrySuspendCompletedHandler, WebResourceRequestedEventHandler,
+    GetFaviconCompletedHandler, GetProcessExtendedInfosCompletedHandler,
+    HistoryChangedEventHandler, IsDocumentPlayingAudioChangedEventHandler,
+    NavigationCompletedEventHandler, NavigationStartingEventHandler,
+    NewWindowRequestedEventHandler, SourceChangedEventHandler, TrySuspendCompletedHandler,
+    WebResourceRequestedEventHandler,
 };
 use windows::core::Interface;
 use windows::Win32::System::Com::IStream;
@@ -269,7 +268,11 @@ impl<R: Runtime> WebView2Motor<R> {
     ///
     /// # Safety
     /// `core` geçerli ve çağrı ana iş parçacığında.
-    unsafe fn cerceve_kaydet(tablo: &Mutex<HashMap<SekmeId, u32>>, id: SekmeId, core: &ICoreWebView2) {
+    unsafe fn cerceve_kaydet(
+        tablo: &Mutex<HashMap<SekmeId, u32>>,
+        id: SekmeId,
+        core: &ICoreWebView2,
+    ) {
         let Ok(v20) = core.cast::<ICoreWebView2_20>() else {
             return;
         };
@@ -597,15 +600,17 @@ impl<R: Runtime> WebView2Motor<R> {
             // `ICoreWebView2` üzerinde: yetenek kontrolü gerekmiyor.
             let d = dinleyici.clone();
             let _ = core.add_ContainsFullScreenElementChanged(
-                &ContainsFullScreenElementChangedEventHandler::create(Box::new(move |sender, _| {
-                    if let (Some(s), Some(d)) = (sender, d.upgrade()) {
-                        let mut tam = windows::core::BOOL(0);
-                        if s.ContainsFullScreenElement(&mut tam).is_ok() {
-                            d.tam_ekran_degisti(id, tam.as_bool());
+                &ContainsFullScreenElementChangedEventHandler::create(Box::new(
+                    move |sender, _| {
+                        if let (Some(s), Some(d)) = (sender, d.upgrade()) {
+                            let mut tam = windows::core::BOOL(0);
+                            if s.ContainsFullScreenElement(&mut tam).is_ok() {
+                                d.tam_ekran_degisti(id, tam.as_bool());
+                            }
                         }
-                    }
-                    Ok(())
-                })),
+                        Ok(())
+                    },
+                )),
                 &mut token,
             );
 
@@ -1203,11 +1208,8 @@ impl<R: Runtime> Motor<R> for WebView2Motor<R> {
         // devralınıp serbest bırakılıyor; hata durumunda null kalıyor.
         unsafe {
             let mut ham = windows::core::PWSTR::null();
-            if GetAvailableCoreWebView2BrowserVersionString(
-                windows::core::PCWSTR::null(),
-                &mut ham,
-            )
-            .is_err()
+            if GetAvailableCoreWebView2BrowserVersionString(windows::core::PCWSTR::null(), &mut ham)
+                .is_err()
                 || ham.is_null()
             {
                 return None;

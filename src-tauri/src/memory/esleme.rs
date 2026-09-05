@@ -379,7 +379,10 @@ mod testler {
         let mut d = Defter::default();
         let t = d.tur(&[kabuk(100, &[1])], &mb(&[(100, 200)]), &[(1, true)]);
         assert_eq!(t.sekmeler[0].mb, 100);
-        assert!(t.sekmeler[0].paylasimli, "paylaşılan rakam öyle etiketleniyor");
+        assert!(
+            t.sekmeler[0].paylasimli,
+            "paylaşılan rakam öyle etiketleniyor"
+        );
         assert_eq!(t.ortak_mb, 100, "kabuğun payı ortak giderde");
         assert!(t.tam);
     }
@@ -454,16 +457,28 @@ mod testler {
     fn hic_olculmemis_pasif_sekme_bilinmeyen_sayiliyor() {
         // Oturumdan `Atilmis` doğan sekme: bir kez bile webview almadı.
         let mut d = Defter::default();
-        let t = d.tur(&[render(100, &[1])], &mb(&[(100, 180)]), &[(1, true), (2, false)]);
+        let t = d.tur(
+            &[render(100, &[1])],
+            &mb(&[(100, 180)]),
+            &[(1, true), (2, false)],
+        );
         assert_eq!(t.kazanc_bilinmeyen, 1);
         assert_eq!(t.kazanc_mb, 0);
-        assert_eq!(t.sekmeler.len(), 1, "ölçülmemiş sekme sıfırla listelenmiyor");
+        assert_eq!(
+            t.sekmeler.len(),
+            1,
+            "ölçülmemiş sekme sıfırla listelenmiyor"
+        );
     }
 
     #[test]
     fn kapanan_sekme_defterden_dusuyor() {
         let mut d = Defter::default();
-        d.tur(&[render(100, &[1]), render(101, &[2])], &mb(&[(100, 100), (101, 100)]), &[(1, true), (2, true)]);
+        d.tur(
+            &[render(100, &[1]), render(101, &[2])],
+            &mb(&[(100, 100), (101, 100)]),
+            &[(1, true), (2, true)],
+        );
         assert_eq!(d.kayitlar.len(), 2);
         d.tur(&[render(100, &[1])], &mb(&[(100, 100)]), &[(1, true)]);
         assert_eq!(d.kayitlar.len(), 1, "kapanan sekme defterde kalmıyor");

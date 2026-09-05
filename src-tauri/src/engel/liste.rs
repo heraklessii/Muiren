@@ -121,7 +121,8 @@ impl Liste {
     /// Sıra tersine olsaydı istisna yazmanın anlamı kalmazdı.
     pub fn engelli_mi(&self, url: &str) -> bool {
         let alan = alan(url);
-        if alan_eslesiyor(&self.istisna_alanlari, alan) || parca_eslesiyor(&self.istisna_parcalari, url)
+        if alan_eslesiyor(&self.istisna_alanlari, alan)
+            || parca_eslesiyor(&self.istisna_parcalari, url)
         {
             return false;
         }

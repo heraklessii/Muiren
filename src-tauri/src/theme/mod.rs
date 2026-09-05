@@ -127,9 +127,7 @@ pub fn arkaplan_veri(arkaplan: &Arkaplan) -> Option<String> {
     let yol = std::path::Path::new(&arkaplan.yol);
     let boyut = std::fs::metadata(yol).ok()?.len();
     if boyut == 0 || boyut > AZAMI_ARKAPLAN {
-        log::warn!(
-            "muiren: arka plan görseli atlandı ({boyut} bayt, üst sınır {AZAMI_ARKAPLAN})"
-        );
+        log::warn!("muiren: arka plan görseli atlandı ({boyut} bayt, üst sınır {AZAMI_ARKAPLAN})");
         return None;
     }
     let veri = std::fs::read(yol).ok()?;

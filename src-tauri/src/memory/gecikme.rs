@@ -290,11 +290,16 @@ mod testler {
         let mut d = Defter::yeni();
         let t = Instant::now();
         d.basla(1, Kaynak::Atilmis, t);
-        assert_eq!(d.bitir(1, Kaynak::Atilmis, ms(t, AZAMI_MS as u64 + 1)), None);
+        assert_eq!(
+            d.bitir(1, Kaynak::Atilmis, ms(t, AZAMI_MS as u64 + 1)),
+            None
+        );
         assert!(d.ozet().atilmis.is_none());
         // Tam sınır kabul ediliyor.
         d.basla(2, Kaynak::Atilmis, t);
-        assert!(d.bitir(2, Kaynak::Atilmis, ms(t, AZAMI_MS as u64)).is_some());
+        assert!(d
+            .bitir(2, Kaynak::Atilmis, ms(t, AZAMI_MS as u64))
+            .is_some());
     }
 
     #[test]

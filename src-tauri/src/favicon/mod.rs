@@ -139,10 +139,8 @@ pub fn buda(dizin: &Path, kullanilan: &[String]) -> Sonuc<u64> {
         if !kimlik_gecerli(ad) || yol.extension().is_none_or(|u| u != "png") {
             continue;
         }
-        if !kullanilan.iter().any(|k| k == ad) {
-            if std::fs::remove_file(&yol).is_ok() {
-                silinen += 1;
-            }
+        if !kullanilan.iter().any(|k| k == ad) && std::fs::remove_file(&yol).is_ok() {
+            silinen += 1;
         }
     }
     Ok(silinen)
@@ -165,8 +163,7 @@ fn png_mi(veri: &[u8]) -> bool {
 /// kabuğa `data:` adresi olarak gidiyor, aynı gerekçeyle (dosya sistemi
 /// kanalı açmamak için).
 pub(crate) fn base64_kodla(veri: &[u8]) -> String {
-    const ALFABE: &[u8; 64] =
-        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const ALFABE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
     let mut cikti = String::with_capacity(veri.len().div_ceil(3) * 4);
     for parca in veri.chunks(3) {
@@ -284,7 +281,7 @@ mod testler {
         let kalan = yaz(d.path(), &png(b"kalan")).unwrap();
         let giden = yaz(d.path(), &png(b"giden")).unwrap();
 
-        assert_eq!(buda(d.path(), &[kalan.clone()]).unwrap(), 1);
+        assert_eq!(buda(d.path(), std::slice::from_ref(&kalan)).unwrap(), 1);
         assert!(d.path().join(format!("{kalan}.png")).exists());
         assert!(!d.path().join(format!("{giden}.png")).exists());
     }

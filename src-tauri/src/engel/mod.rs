@@ -245,7 +245,10 @@ mod testler {
     fn normal_gezinme_engellenmiyor() {
         let e = Engelleyici::yeni(&ayarlar(false, true, &[]));
         // Kullanıcının yazdığı adres.
-        assert_eq!(e.gezinme_engelli_mi("https://ornek.com/", true, false), None);
+        assert_eq!(
+            e.gezinme_engelli_mi("https://ornek.com/", true, false),
+            None
+        );
         // Yönlendirme olmayan, hareketsiz ilk yükleme (oturum geri yükleme).
         assert_eq!(
             e.gezinme_engelli_mi("https://ornek.com/", false, false),

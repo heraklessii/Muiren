@@ -482,12 +482,12 @@ impl Depo {
                 form_dolu: s.form_dolu,
                 gizli: s.gizli,
                 grup: s.grup,
-                katli: s.grup.is_some_and(|g| {
-                    self.grup_bul(g).is_some_and(|x| x.katli)
-                }),
-                grup_uyku_esigi_sn: s.grup.and_then(|g| {
-                    self.grup_bul(g).and_then(|x| x.uyku_esigi_sn)
-                }),
+                katli: s
+                    .grup
+                    .is_some_and(|g| self.grup_bul(g).is_some_and(|x| x.katli)),
+                grup_uyku_esigi_sn: s
+                    .grup
+                    .and_then(|g| self.grup_bul(g).and_then(|x| x.uyku_esigi_sn)),
                 tam_ekran: s.tam_ekran,
                 yukleniyor: s.yukleniyor,
                 geri_var: s.geri_var,

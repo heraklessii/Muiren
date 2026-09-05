@@ -9,8 +9,8 @@ takılmayan, teması ve arka planı baştan aşağı değiştirilebilen bir tara
 [![Status](https://img.shields.io/badge/durum-erken%20geli%C5%9Ftirme-orange.svg)](docs/Roadmap.md)
 
 > ⚠️ **Bu proje erken geliştirme aşamasında.** Sekmeler, bellek politikası,
-> geçmiş, temalar, engelleme ve köprüler yazıldı ve 431 otomatik testle
-> doğrulanıyor (361 Rust + 70 arayüz). Ama **projenin asıl iddiası —
+> geçmiş, temalar, engelleme ve köprüler yazıldı ve 438 otomatik testle
+> doğrulanıyor (368 Rust + 70 arayüz). Ama **projenin asıl iddiası —
 > "az RAM" — henüz ölçülmedi.** Ölçüm aracı hazır, rakam yok. Durum tablosu:
 > [`docs/Roadmap.md`](docs/Roadmap.md).
 

@@ -55,6 +55,7 @@ jobs:
             Kurulum paketleri imzasız: Windows SmartScreen uyarı gösterecek.
             Kod imzalama sertifikası henüz yok.
 
+            Bu sürümde ne değişti: [`CHANGELOG.md`](https://github.com/heraklessii/Muiren/blob/main/CHANGELOG.md)
             Durum tablosu: [`docs/Roadmap.md`](https://github.com/heraklessii/Muiren/blob/main/docs/Roadmap.md)
           releaseDraft: false
           # Ön sürüm: uygulama sahada geniş çapta denenmedi, "Latest" rozetini

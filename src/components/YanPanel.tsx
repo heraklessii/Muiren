@@ -10,10 +10,14 @@
  * panelin altında kalmıyor.
  */
 
+import { useRef, useState } from "react";
+
 import { BellekPaneli } from "./BellekPaneli";
 import { GecmisPaneli } from "./GecmisPaneli";
 import { GrupPaneli } from "./GrupPaneli";
 import { Kapat, Klasor, Liste, Sabit, Saat, Ses, Sessiz, Yonga } from "./Ikonlar";
+import { SekmeIkonu } from "./SekmeIkonu";
+import { useFavicon } from "../hooks/useFavicon";
 import { sure } from "../lib/bicim";
 import type {
   BellekOzeti,
@@ -25,6 +29,18 @@ import type {
 } from "../ipc/tipler";
 
 export type PanelSekmesi = "sekmeler" | "bellek" | "gecmis" | "gruplar";
+
+/** Panel bölümleri — sıra, etiket ve ikon tek yerde. */
+const BOLUMLER = [
+  { ad: "sekmeler", etiket: "Sekmeler", ikon: Liste },
+  { ad: "bellek", etiket: "Bellek", ikon: Yonga },
+  { ad: "gruplar", etiket: "Gruplar", ikon: Klasor },
+  { ad: "gecmis", etiket: "Geçmiş", ikon: Saat },
+] as const satisfies ReadonlyArray<{
+  ad: PanelSekmesi;
+  etiket: string;
+  ikon: (o: { boyut?: number }) => React.ReactElement;
+}>;
 
 interface Ozellik {
   sekme: PanelSekmesi;
@@ -70,6 +86,37 @@ function DikeySekmeler({
   onKapatSekme,
   onSessizeAl,
 }: Pick<Ozellik, "sekmeler" | "onEtkinlestir" | "onKapatSekme" | "onSessizeAl">) {
+  // Dolaşan odak — yatay şeritle aynı gerekçe (`SekmeSeridi`): 50 satırlık
+  // bir listede her satıra `tabIndex=0` vermek, panelden çıkmak için 50 kez
+  // Tab'a basmak demek. Ok tuşları burada da **etkinleştirmiyor**, yalnız
+  // odağı taşıyor: uyuyan sekmenin üstünden geçmek onu uyandırmamalı
+  // (CLAUDE.md #5).
+  const [odakId, ayarlaOdakId] = useState<SekmeId | null>(null);
+  const ogeler = useRef(new Map<SekmeId, HTMLDivElement | null>());
+  // Aynı önbellek yatay şeritle paylaşılıyor (modül düzeyinde): dikey liste
+  // açıldığında ikonlar yeniden okunmuyor (hooks/useFavicon.ts).
+  const favicon = useFavicon();
+
+  const odakHedefi =
+    sekmeler.find((s) => s.id === odakId)?.id ??
+    sekmeler.find((s) => s.etkin)?.id ??
+    sekmeler[0]?.id ??
+    null;
+
+  const odagiTasi = (adim: number | "bas" | "son") => {
+    if (sekmeler.length === 0) return;
+    const simdiki = sekmeler.findIndex((s) => s.id === odakHedefi);
+    const yeni =
+      adim === "bas"
+        ? 0
+        : adim === "son"
+          ? sekmeler.length - 1
+          : Math.min(Math.max(simdiki + adim, 0), sekmeler.length - 1);
+    const id = sekmeler[yeni].id;
+    ayarlaOdakId(id);
+    ogeler.current.get(id)?.focus();
+  };
+
   if (sekmeler.length === 0) {
     return <p className="yan__bos">Açık sekme yok.</p>;
   }
@@ -80,7 +127,10 @@ function DikeySekmeler({
         <li key={s.id}>
           <div
             role="tab"
-            tabIndex={0}
+            ref={(el) => {
+              ogeler.current.set(s.id, el);
+            }}
+            tabIndex={s.id === odakHedefi ? 0 : -1}
             aria-selected={s.etkin}
             className={[
               "dikey__oge",
@@ -92,10 +142,26 @@ function DikeySekmeler({
             // Girinti ağaçtaki derinlikten; hesap backend'de (CLAUDE.md #2).
             style={{ "--derinlik": s.derinlik } as React.CSSProperties}
             onClick={() => onEtkinlestir(s.id)}
+            onFocus={() => ayarlaOdakId(s.id)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 onEtkinlestir(s.id);
+              } else if (e.key === "ArrowDown") {
+                e.preventDefault();
+                odagiTasi(1);
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                odagiTasi(-1);
+              } else if (e.key === "Home") {
+                e.preventDefault();
+                odagiTasi("bas");
+              } else if (e.key === "End") {
+                e.preventDefault();
+                odagiTasi("son");
+              } else if (e.key === "Delete" && !s.sabit) {
+                e.preventDefault();
+                onKapatSekme(s.id);
               }
             }}
             title={`${s.gorunenAd || "Yeni sekme"}\n${s.url}`}
@@ -105,7 +171,7 @@ function DikeySekmeler({
                 <Sabit boyut={11} />
               </span>
             )}
-            <span className="dikey__isaret" aria-hidden />
+            <SekmeIkonu sekme={s} adres={favicon(s.favicon)} boyut={16} />
             {/* Başlık sayfadan geliyor: backend temizledi, React kaçışlıyor. */}
             <span className="dikey__ad">{s.gorunenAd || "Yeni sekme"}</span>
             <span className="dikey__bosta">{sure(s.bostaSn)}</span>
@@ -165,42 +231,24 @@ export function YanPanel({
     <aside className="yan" aria-label="Yan panel">
       <div className="yan__baslik">
         <div className="yan__sekmeler" role="tablist" aria-label="Panel bölümleri">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={sekme === "sekmeler"}
-            className={`yan__sekme ${sekme === "sekmeler" ? "yan__sekme--etkin" : ""}`}
-            onClick={() => onSekme("sekmeler")}
-          >
-            <Liste boyut={13} /> Sekmeler
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={sekme === "bellek"}
-            className={`yan__sekme ${sekme === "bellek" ? "yan__sekme--etkin" : ""}`}
-            onClick={() => onSekme("bellek")}
-          >
-            <Yonga boyut={13} /> Bellek
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={sekme === "gruplar"}
-            className={`yan__sekme ${sekme === "gruplar" ? "yan__sekme--etkin" : ""}`}
-            onClick={() => onSekme("gruplar")}
-          >
-            <Klasor boyut={13} /> Gruplar
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={sekme === "gecmis"}
-            className={`yan__sekme ${sekme === "gecmis" ? "yan__sekme--etkin" : ""}`}
-            onClick={() => onSekme("gecmis")}
-          >
-            <Saat boyut={13} /> Geçmiş
-          </button>
+          {BOLUMLER.map(({ ad, etiket, ikon: Ikon }) => (
+            <button
+              key={ad}
+              type="button"
+              role="tab"
+              aria-selected={sekme === ad}
+              // Etiket yalnız etkin bölümde yazılıyor; diğerleri ikon.
+              // Dördü birden yazıldığında 300 piksellik panele sığmıyordu ve
+              // sonuncusu ("Geçmiş") kenardan taşıp yarım görünüyordu —
+              // yani panelin en az bulunan bölümü, bulunamayan bölümdü.
+              title={etiket}
+              className={`yan__sekme ${sekme === ad ? "yan__sekme--etkin" : ""}`}
+              onClick={() => onSekme(ad)}
+            >
+              <Ikon boyut={13} />
+              <span className={sekme === ad ? "" : "gorunmez"}>{etiket}</span>
+            </button>
+          ))}
         </div>
         <button
           type="button"

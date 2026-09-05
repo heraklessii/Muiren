@@ -133,9 +133,15 @@ geliyor (her sekme 12 piksel, favicon bile sığmıyor). Muiren'in cevabı:
   bellekte). Türkçe arama `toLocaleLowerCase("tr")` ile.
 - **Dikey sekme çubuğu** yan panelde (Faz 3). 50 sekmede yatay çubuk fizik
   olarak yetmiyor; dikey liste doğru cevap.
-- Uyuyan sekme soluk, atılmış sekme daha soluk + kesikli kenarlık. Kullanıcı
-  neyin bellekte olduğunu bir bakışta görüyor — bu bir tanıtım öğesi değil,
-  güven öğesi.
+- Sekmenin durumu **favicon'un çevresindeki halkada**: uyuyan sekmede sönük
+  dolu halka, atılmışta kesikli halka. Kullanıcı neyin bellekte olduğunu bir
+  bakışta görüyor — bu bir tanıtım öğesi değil, güven öğesi. Halka olmasının
+  sebebi yer: alt sınıra inmiş bir sekmede favicon dışında hiçbir şey
+  görünmüyor ve durum ayrı bir nokta olsaydı, tam da en çok sekme açıkken
+  kaybolurdu.
+- **Etkin sekme daha geç daralıyor** ve her zaman görünür tutuluyor
+  (`docs/Frontend.md`): kullanıcının şu an baktığı sayfanın adı, 40 sekme
+  açıkken bile okunabilmeli.
 
 Görsel ayrıntı ve jetonlar: `docs/Frontend.md`.
 
@@ -155,7 +161,39 @@ geçerli.
 
 ## Yeni sekme sayfası
 
-`muiren://yeni` — kabuğun kendi sayfası, ağ isteği yok, reklam yok, öneri akışı
-yok. İçinde: arama kutusu, sabitlenmiş kısayollar, tema arka planı ve
-(kullanıcı isterse) bellek özeti. Yükleme maliyeti neredeyse sıfır olmalı;
-`docs/Bellek.md` içindeki "boş tarayıcı < 150 MB" hedefi buna dahil.
+`muiren://yeni` — kabuğun kendi sayfası, **ağ isteği yok**, reklam yok, öneri
+akışı yok. Webview'i de yok: kabuk çiziyor, dolayısıyla render maliyeti sıfır.
+`docs/Bellek.md` içindeki "boş tarayıcı < 150 MB" hedefi buna dayanıyor.
+
+İçinde, yukarıdan aşağı:
+
+| Bölüm | Kaynak |
+|---|---|
+| Arama kutusu | — |
+| **Sık gidilenler** (8 kutu) | `gecmis_ara("")` — boş sorgu sayaca göre sıralı veriyor |
+| **Yer imleri** (şerit) | `yer_imi_listesi(null)` |
+| **Bellek kartı** | `bellek_ozeti` olayının son değeri |
+
+İkisi de yerel diskte (`hooks/useYeniSekme.ts`): bir tarayıcının açtığı ilk
+sayfa, henüz hiçbir siteye gitmemişken bir sunucuya bağlanıyorsa o tarayıcı
+telemetri topluyor demek (`docs/Roadmap.md` karar #5).
+
+Sık gidilenler için **ayrı bir komut açılmadı**: aynı sıralama zaten adres
+çubuğu önerilerinin sıralaması ve iki farklı "en sık" tanımı, iki farklı liste
+demek olurdu.
+
+**Gizli sekmede geçmiş listeleri hiç çizilmiyor** — ne sık gidilenler ne yer
+imleri. Gizli sekme açan kullanıcının ekranında sık gittiği siteleri
+sıralamak, gizliliğin tam da kaçındığı şeyi yapmak olurdu: omuz üstünden
+bakan biri listeyi görüyor. Yerine sekmenin ne yapıp ne yapmadığı yazıyor
+(geçmişe yazmıyor, çerezler sekmeyle gidiyor, indirmeler ve yer imleri
+kalıcı).
+
+Sayfa dikeyde **ortalanmıyor**, üstten başlıyor: ortalanmış bir yerleşimde
+arama kutusu, içerik büyüdükçe yukarı kayıyor — geçmişi olmayan kullanıcıda
+ekranın ortasında, bir hafta sonra yukarıda. Kutu her açılışta aynı yerde
+olmak zorunda; kullanıcı oraya bakmadan yazmaya başlıyor.
+
+Bellek kartı sayfanın en altında ve sessiz: bir tanıtım afişi değil, çalışan
+bir ölçümün özeti. Rakamı `BellekOzeti` içinden alıyor, **kendi ölçümünü
+yapmıyor ve hiçbir sekmeyi uyandırmıyor** (CLAUDE.md #5).

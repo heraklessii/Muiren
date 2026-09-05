@@ -4,3 +4,6 @@ src-tauri/target/
 src-tauri/gen/
 *.local
 .DS_Store
+
+# Claude Code yerel yapılandırması
+.claude/

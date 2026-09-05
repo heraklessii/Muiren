@@ -49,6 +49,8 @@ interface Ozellik {
   engelSayisi: number;
   /** Son engelin sebebi; rozetin ipucunda görünüyor. */
   engelSebebi: EngelSebebi | null;
+  /** Bellek nabzı. Çubuğun sağ ucunda, yer imi yıldızından sonra. */
+  nabiz?: React.ReactNode;
 }
 
 /** Engelleme rozetinin ipucu. Sessiz engelleme kabul edilmiyor. */
@@ -75,24 +77,62 @@ export function AdresCubugu({
   onYerImi,
   engelSayisi,
   engelSebebi,
+  nabiz,
 }: Ozellik) {
   const [taslak, ayarlaTaslak] = useState<string | null>(null);
   const [secili, ayarlaSecili] = useState(-1);
   const girdiRef = useRef<HTMLInputElement>(null);
+  /** `Ctrl+L` odağı istedi ama girdi henüz boyanmadı. */
+  const odakBekliyor = useRef(false);
 
   const adres = sekme?.url ?? "";
   const g = gosterim(adres);
   const oneriler = useOneriler(taslak);
+  const sekmeId = sekme?.id ?? null;
 
-  // `Ctrl+L` sayacı arttığında odaklan ve tamamını seç.
+  /**
+   * Sekme değişince taslak **düşüyor**.
+   *
+   * Taslak o anki sekmenin adresinden doğdu; sekme değiştiğinde ekranda
+   * duran metin artık başka bir sekmeye ait. Enter'a basıldığında yeni
+   * sekme, eski sekmenin adresine gidiyordu — kullanıcının yazmadığı bir
+   * adrese. Kısayolla sekme değiştirmek (Ctrl+Tab) adres çubuğu açıkken
+   * yapılabildiği için yol da uzak değil.
+   */
+  useEffect(() => {
+    ayarlaTaslak(null);
+    ayarlaSecili(-1);
+  }, [sekmeId]);
+
+  // `Ctrl+L` sayacı arttığında düzenleme kipine geç ve odağı **iste**.
   useEffect(() => {
     if (odakSayaci === 0) return;
+    odakBekliyor.current = true;
     ayarlaTaslak(g.ham);
-    girdiRef.current?.focus();
-    girdiRef.current?.select();
     // `g.ham` bilerek bağımlılık değil: sekme değiştiğinde odak çalınmamalı.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [odakSayaci]);
+
+  // Odak, girdi BOYANDIKTAN sonra veriliyor.
+  //
+  // `ayarlaTaslak` ile aynı turda `girdiRef.current` hâlâ `null`: o anda
+  // ekranda düğme var, girdi yok. Odak isteği orada sessizce düşüyordu ve
+  // belirtisi kullanıcı için "adres çubuğu açıldı ama yazmıyor" oluyordu —
+  // harfler kabuğun gövdesine ya da sayfaya gidiyordu. Fare yolu (aşağıdaki
+  // `onClick`) bunu `queueMicrotask` ile zaten çözüyordu; kısayol yolu
+  // çözmüyordu.
+  //
+  // Bağımlılık dizisi YOK: bayrak ancak girdi gerçekten varken temizleniyor,
+  // yani odak isteği kaybolmuyor. Etki gövdesi bayrak kapalıyken ilk satırda
+  // dönüyor.
+  useEffect(() => {
+    if (!odakBekliyor.current) return;
+    const girdi = girdiRef.current;
+    if (!girdi) return;
+    odakBekliyor.current = false;
+    girdi.focus();
+    girdi.select();
+  });
 
   // Liste değişince seçim başa dönüyor: eski indeks yeni listede başka bir
   // adrese denk gelirdi ve kullanıcı Enter'a bastığında gitmek istemediği
@@ -151,11 +191,21 @@ export function AdresCubugu({
       </div>
 
       <div className={`adres${duzenleniyor ? " adres--duzenleniyor" : ""}`}>
+        {/*
+          Kilit **yalnız gerçek bir bağlantı varken** çiziliyor.
+
+          Koşul `adres === ""` değil `g.ham === ""`: `gosterim` kabuğun kendi
+          sayfalarında (`muiren://yeni`) boş bir ham adres döndürüyor ve
+          eski koşul onu yakalamıyordu. Sonuç, yeni sekme sayfasında
+          "bağlantı şifresiz" uyarısıydı — ortada bağlantı yokken. Güvenlik
+          göstergesinin yanlış yerde uyarması, doğru yerde uyardığında
+          inandırıcılığını götürüyor.
+        */}
         <span
           className={`adres__kilit${g.guvenli ? " adres__kilit--guvenli" : " adres__kilit--acik"}`}
           title={g.guvenli ? "Bağlantı şifreli" : "Bağlantı şifresiz"}
         >
-          {adres === "" ? null : g.guvenli ? <Kilit boyut={13} /> : <Uyari boyut={13} />}
+          {g.ham === "" ? null : g.guvenli ? <Kilit boyut={13} /> : <Uyari boyut={13} />}
         </span>
 
         {duzenleniyor ? (
@@ -269,6 +319,8 @@ export function AdresCubugu({
           {engelSayisi}
         </span>
       )}
+
+      {nabiz}
     </div>
   );
 }

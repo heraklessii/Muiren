@@ -137,6 +137,17 @@ dünya.
 - `ipc/` — `invoke` sarmalayıcıları ve tipler. Bileşenler `invoke` görmez.
 - `hooks/` — backend durumunun yansımaları. **Kısayol tablosu burada yok**:
   `App.tsx` tuşu olduğu gibi `kisayol_bas`a veriyor.
+- `components/SekmeIkonu.tsx` — favicon + **durum halkası**. Sekmenin bellek
+  durumunun tek görsel dili; üç yerde kullanılıyor (yatay şerit, dikey liste,
+  sekme araması). İkinci bir çizim yazmak, kullanıcının öğrendiği göstergeyi
+  ikinci panelde yeniden öğrenmesi demek (`docs/Frontend.md`).
+- `components/Nabiz.tsx` — gezinme çubuğundaki bellek göstergesi. Projenin
+  tek iddiası bir panelin arkasında saklıydı; bu çubuk onu her an görünür
+  kılıyor. Kendi ölçümünü yapmıyor, `bellek_ozeti` olayını çiziyor.
+- `dev/sahte.ts` — **yalnız geliştirme**: `?sahte` sorgusuyla
+  `window.__TAURI_INTERNALS__` yerine geçiyor ve kabuk düz bir tarayıcıda
+  gerçekçi veriyle açılıyor. Üretim paketine girmiyor (`import.meta.env.DEV`).
+  Bir sözleşme değil; `docs/IPC.md` ile ayrışırsa hata buradadır.
 - `lib/` — saf ve testli: `url.ts` (adres/arama ayrımı), `suz.ts`, `bicim.ts`,
   `teshis.ts` (GPU/codec/sürüm yorumlaması; ölçüm `hooks/useTeshis.ts` içinde
   — `esik.rs`/`olcum.rs` ayrımının arayüzdeki karşılığı).
@@ -170,6 +181,11 @@ Komutlar: `npm run tauri dev` · `npm test` ·
    dize; sekme çubuğuna, geçmişe, köprü mesajına girmeden önce kırpılır ve
    kaçışlanır.
 9. **Renk/ölçü sabiti yazma.** Hepsi `src/styles.css` başındaki jetonlardan.
+   Yeni bir renk jetonu eklerken **beyaz listedeki bir jetondan türet**
+   (`color-mix`), yoksa hiç ekleme: kullanıcı teması `--bg-panel` ile
+   `--accent` değerini değiştirebiliyor ama türevleri değiştiremiyor. Sabit
+   yazılan bir vurgu, koyu temada doğru açık temada görünmez oluyor ve bu
+   ancak tema listesi büyüdüğünde fark ediliyor (`docs/Temalar.md`).
 10. **Türkçe küçük harf `toLocaleLowerCase("tr")`.** Düz `toLowerCase()`
     "İSTANBUL" dizesini `"istanbul"` yapmıyor; geçmiş araması eşleşmiyor.
     **Kapsamı kullanıcı metni**: teknik ASCII tanımlayıcıda (GPU sürücü
@@ -229,7 +245,21 @@ Komutlar: `npm run tauri dev` · `npm test` ·
     yaratılırken bir kez veriliyor (`Motor::istek_suzgeci_acik`); bedeli, ayar
     değiştiğinde yalnız yeni/yenilenen sekmelerin etkilenmesi ve arayüz bunu
     rozetle söylüyor.
-23. **Sekme başına belleği `SekmeOzeti` içine taşıma.** Rakam `BellekOzeti`
+23. **Webview yaratabilen komut `async` olmak zorunda.** Eşzamanlı bir Tauri
+    komutu ana iş parçacığında **ve kabuk webview'inin geri çağrısının içinde**
+    koşuyor; `Window::add_child` orada kilitleniyor (WebView2 kendi geri
+    çağrısının içindeyken ikinci bir geri çağrıyı teslim etmiyor, wry'nin iç
+    içe mesaj döngüsü sonsuza kadar bekliyor). Belirtisi sinsi: pencere
+    boyanıyor, Windows "yanıt veriyor" diyor, arayüz ölü. Çağrı ağacı
+    `Motor::sekme_ac`e ulaşan her komut `async` (`commands/mod.rs`); motorun
+    kendi olay geri çağrıları aynı tuzaktan `std::thread::spawn` ile çıkıyor
+    (`Dinleyici::yeni_pencere`). `icerik_alani` ve `ortu_gorunur` bilerek
+    eşzamanlı: webview yaratmıyorlar ve sıraları bozulmamalı.
+24. **Adres mi arama mı kararı backend'de.** `tabs::adres_mi` saf ve testli;
+    `src/lib/url.ts` içindeki kopya yalnız kullanıcı yazarken kilit/vurgu
+    çiziyor. Şemasız adres (`ornek.com`) `https`e tamamlanıyor — o satır
+    silinirse kullanıcının yazdığı her alan adı aramaya gider.
+25. **Sekme başına belleği `SekmeOzeti` içine taşıma.** Rakam `BellekOzeti`
     içinde (`sekme_mb`) ve arayüz iki listeyi `id` üzerinden birleştiriyor.
     Sebebi: `SekmeOzeti` aynı zamanda `esik.rs`in girdisi ve eşik kararı
     sekme başına rakama **dayanmıyor** — boşta kalma süresine ve sistem

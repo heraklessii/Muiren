@@ -33,6 +33,7 @@ import { YanPanel, type PanelSekmesi } from "./components/YanPanel";
 import { YeniSekme } from "./components/YeniSekme";
 import { Indirme } from "./components/Indirme";
 import { KopruMenusu } from "./components/KopruMenusu";
+import { Nabiz } from "./components/Nabiz";
 import { etkinSekme, useSekmeler } from "./hooks/useSekmeler";
 import { useBellek } from "./hooks/useBellek";
 import { useEngel } from "./hooks/useEngel";
@@ -162,9 +163,48 @@ export default function App() {
     };
   }, [arayuzKisayolu]);
 
+  /**
+   * Açık örtülerden **en üsttekini** kapatır; hiçbiri açık değilse `false`.
+   *
+   * Sıra kapanma sırası: teşhis ayarların üstünden açılıyor, sekme araması
+   * ikisinin de üstüne gelebiliyor. Kapatan tuş her zaman en son açılanı
+   * bulmalı, yoksa Escape kullanıcının baktığı ekranı değil arkasındakini
+   * kapatır.
+   */
+  const ortuKapat = useCallback((): boolean => {
+    if (aramaAcik) {
+      ayarlaArama(false);
+      return true;
+    }
+    if (teshisAcik) {
+      ayarlaTeshis(false);
+      return true;
+    }
+    if (ayarlarAcik) {
+      ayarlaAyarlar(false);
+      return true;
+    }
+    return false;
+  }, [aramaAcik, teshisAcik, ayarlarAcik]);
+
   // Kabuk odaktayken: tuşu backend'e ver, tabloyu o çalıştırsın.
   useEffect(() => {
     const dinle = (e: KeyboardEvent) => {
+      // Escape'in **kabukta** bir işi var: açık örtüyü kapatmak. Backend
+      // tablosunda karşılığı `Durdur` (`src-tauri/src/kisayol.rs`) ve ikisi
+      // aynı tuşta çakışıyor. Ayrım burada veriliyor çünkü "örtü açık mı"
+      // yalnız kabuğun bildiği bir şey: backend ayarlar ekranının açık
+      // olduğunu `ortu_gorunur` ile biliyor ama hangisinin üstte olduğunu
+      // bilmiyor ve bilmesinin de karşılığı yok.
+      //
+      // Bu satır olmadan ayarlar ekranındayken Escape sayfanın yüklenmesini
+      // durduruyor ve ekran açık kalıyordu — kullanıcının kapatma düğmesini
+      // aramaktan başka yolu yoktu.
+      if (e.key === "Escape" && ortuKapat()) {
+        e.preventDefault();
+        return;
+      }
+
       // Yalnız değiştiricili kombinasyonlar ve işlev tuşları gidiyor; her
       // harfi backend'e göndermek saniyede onlarca IPC turu demek olurdu.
       const aday =
@@ -181,7 +221,7 @@ export default function App() {
 
     window.addEventListener("keydown", dinle);
     return () => window.removeEventListener("keydown", dinle);
-  }, []);
+  }, [ortuKapat]);
 
   /**
    * Tam ekran örtü açıkken sekme webview'i **gizleniyor**.
@@ -251,6 +291,16 @@ export default function App() {
         onYerImi={yerImiDegistir}
         engelSayisi={engel.sayi}
         engelSebebi={engel.son?.sebep ?? null}
+        // Bellek nabzı burada: projenin tek iddiası bir panelin arkasında
+        // saklıydı ve kullanıcı politikanın çalıştığını hiç görmeden
+        // kullanabiliyordu (`components/Nabiz.tsx`).
+        // Açma değil **değiştirme**: `Ctrl+Shift+M` de aynı paneli
+        // değiştiriyor (`arayuzKisayolu`) ve iki kapının aynı tuşa iki farklı
+        // davranış vermesi, kullanıcının panele nasıl geldiğini hatırlamasını
+        // gerektirirdi.
+        nabiz={
+          <Nabiz ozet={bellek} onAc={() => arayuzKisayolu("bellekPaneli")} />
+        }
       />
 
       {/* İndirme önerisi ve sonuç bildirimi. Modal DEĞİL: indirme sayfanın
@@ -270,7 +320,18 @@ export default function App() {
             dolduruyor. Yan panel açıldığında dikdörtgen daralıyor ve
             `useIcerikAlani` yeni ölçüyü backend'e bildiriyor. */}
         <div className="icerik" ref={icerikRef}>
-          {kabukSayfasi && <YeniSekme onGezin={gezin} motorVar={yetenekler.motor} />}
+          {kabukSayfasi && (
+            <YeniSekme
+              onGezin={gezin}
+              motorVar={yetenekler.motor}
+              // Özet burada da geçiyor: sayfa kendi ölçümünü yapsaydı yeni
+              // sekme açmak süreç tablosunu taramak demek olurdu
+              // (`bellek_ozeti` komutunun son özeti döndürmesiyle aynı
+              // gerekçe).
+              ozet={bellek}
+              gizli={etkin?.gizli ?? false}
+            />
+          )}
         </div>
 
         {/* Kapalıyken hiç çizilmiyor: görünmeyen bir panelde 50 sekmelik

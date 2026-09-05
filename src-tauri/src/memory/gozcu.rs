@@ -36,6 +36,20 @@ use crate::tabs::surucu::Surucu;
 /// Oyun modunda uyanık sekme üst sınırı (`docs/Bellek.md`, "Oyun modu").
 const OYUN_UYANIK_SINIRI: u32 = 2;
 
+/// İlk turun beklemesi.
+///
+/// Döngü **önce uyuyup sonra ölçtüğü** için ilk özet ancak bir periyot sonra
+/// (varsayılan 20 sn) çıkıyordu. Bellek göstergesi artık gezinme çubuğunda
+/// sürekli duruyor (`src/components/Nabiz.tsx`) ve o boşluk, açılıştan sonra
+/// yirmi saniye boyunca **eksik bir gösterge** olarak görünüyor: kullanıcının
+/// gördüğü şey "ölçülüyor" değil, hiçbir şey.
+///
+/// Politika açısından bu turu öne almak zararsız: açılışta oturumdan gelen
+/// sekmelerin hepsi `Atilmis` doğuyor (`tabs/oturum.rs`) ve boşta kalma
+/// süreleri sıfırdan başlıyor, yani eşik hiçbir eylem üretmiyor. Turun tek
+/// yaptığı ölçüp yayınlamak.
+const ILK_BEKLEME_SN: u64 = 3;
+
 /// Gözcü iş parçacığını başlatır.
 ///
 /// Sürücüyü **zayıf** tutuyor: güçlü tutsaydı uygulama kapanırken sürücü
@@ -44,33 +58,43 @@ pub fn baslat<R: Runtime>(surucu: &Arc<Surucu<R>>) {
     let zayif = Arc::downgrade(surucu);
     let sonuc = std::thread::Builder::new()
         .name("muiren-gozcu".into())
-        .spawn(move || loop {
-            // Periyot her turda yeniden okunuyor: kullanıcı ayarlardan
-            // değiştirdiğinde bir sonraki tur yeni değerle uyuyor.
-            let periyot = match zayif.upgrade() {
-                Some(s) => {
-                    let p = s.ayarlar().gozcu_periyodu_sn.max(1);
-                    // Pencere simge durumundayken periyot kısalıyor
-                    // (`docs/Bellek.md`, "Gözcü"). Bu turun bedeli de aynı
-                    // anda düşüyor: gizliyken süreç tablosu hiç taranmıyor
-                    // (`yayinla_ozet`), yani daha sık koşan tur daha ucuz bir
-                    // tur. Tersi olsaydı — iki katı sıklıkta tam ölçüm —
-                    // bedeli tam da kullanıcının oyunda olduğu ana denk
-                    // gelirdi.
-                    if s.pencere_gizli() {
-                        (p / 2).max(1)
-                    } else {
-                        p
+        .spawn(move || {
+            let mut ilk = true;
+            loop {
+                // Periyot her turda yeniden okunuyor: kullanıcı ayarlardan
+                // değiştirdiğinde bir sonraki tur yeni değerle uyuyor.
+                let periyot = match zayif.upgrade() {
+                    Some(s) => {
+                        let p = s.ayarlar().gozcu_periyodu_sn.max(1);
+                        // Pencere simge durumundayken periyot kısalıyor
+                        // (`docs/Bellek.md`, "Gözcü"). Bu turun bedeli de aynı
+                        // anda düşüyor: gizliyken süreç tablosu hiç taranmıyor
+                        // (`yayinla_ozet`), yani daha sık koşan tur daha ucuz bir
+                        // tur. Tersi olsaydı — iki katı sıklıkta tam ölçüm —
+                        // bedeli tam da kullanıcının oyunda olduğu ana denk
+                        // gelirdi.
+                        if s.pencere_gizli() {
+                            (p / 2).max(1)
+                        } else {
+                            p
+                        }
                     }
-                }
-                None => return, // sürücü düştü: uygulama kapanıyor
-            };
-            std::thread::sleep(Duration::from_secs(periyot));
+                    None => return, // sürücü düştü: uygulama kapanıyor
+                };
+                // İlk tur öne alınıyor; sonrakiler ayarın periyodunda.
+                let bekleme = if ilk {
+                    ilk = false;
+                    periyot.min(ILK_BEKLEME_SN)
+                } else {
+                    periyot
+                };
+                std::thread::sleep(Duration::from_secs(bekleme));
 
-            let Some(surucu) = zayif.upgrade() else {
-                return;
-            };
-            tur(&surucu);
+                let Some(surucu) = zayif.upgrade() else {
+                    return;
+                };
+                tur(&surucu);
+            }
         });
 
     if let Err(e) = sonuc {

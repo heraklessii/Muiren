@@ -285,3 +285,24 @@ export function Cop({ boyut = 16 }: Ozellik) {
     </svg>
   );
 }
+
+/**
+ * Pusula — Mui ailesinin Muiren glyph'i.
+ *
+ * Uygulama ikonuyla **aynı çizim** (`public/icons/muiren.svg`,
+ * `src-tauri/icons/kaynak.svg`, `index.html` favicon'u): çember + iğne,
+ * iğnenin yalnız kuzey yarısı dolu. Biri değişirse hepsi değişir
+ * (CLAUDE.md, "Diğer Mui Projeleriyle Tutarlılık").
+ *
+ * Buradaki kopya 16'lık ızgaraya oturtulmuş hâli; kabuğun kendi sayfaları
+ * sekme şeridinde bunu taşıyor.
+ */
+export function Pusula({ boyut = 16 }: Ozellik) {
+  return (
+    <svg {...ortak(boyut)} strokeWidth={1.3}>
+      <circle cx="8" cy="8" r="5.3" />
+      <path d="M8 12.2 9.6 8 6.4 8z" />
+      <path d="M8 3.8 9.6 8 6.4 8z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}

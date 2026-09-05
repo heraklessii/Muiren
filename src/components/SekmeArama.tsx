@@ -11,6 +11,8 @@
 import { useMemo, useState } from "react";
 
 import { Ara, Uyku } from "./Ikonlar";
+import { SekmeIkonu } from "./SekmeIkonu";
+import { useFavicon } from "../hooks/useFavicon";
 import { sirala, suz } from "../lib/suz";
 import { sure } from "../lib/bicim";
 import type { SekmeId, SekmeOzeti } from "../ipc/tipler";
@@ -23,6 +25,7 @@ interface Ozellik {
 
 export function SekmeArama({ sekmeler, onSec, onKapat }: Ozellik) {
   const [sorgu, ayarla] = useState("");
+  const favicon = useFavicon();
   const [imlec, ayarlaImlec] = useState(0);
 
   const sonuc = useMemo(() => sirala(suz(sekmeler, sorgu), sorgu), [sekmeler, sorgu]);
@@ -30,7 +33,12 @@ export function SekmeArama({ sekmeler, onSec, onKapat }: Ozellik) {
 
   return (
     <div className="ortu" onMouseDown={onKapat}>
-      <div className="arama" onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        className="arama"
+        role="dialog"
+        aria-label="Sekmelerde ara"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div className="arama__satir">
           <Ara />
           <input
@@ -75,6 +83,10 @@ export function SekmeArama({ sekmeler, onSec, onKapat }: Ozellik) {
                   onKapat();
                 }}
               >
+                {/* Durum halkalı ikon: şeritteki ve dikey listedeki dilin
+                    aynısı. Aradığı sekmeyi burada bulan kullanıcı, onu
+                    şeritte de aynı işaretle tanıyor (`SekmeIkonu`). */}
+                <SekmeIkonu sekme={s} adres={favicon(s.favicon)} boyut={16} />
                 <span className="arama__ad">{s.gorunenAd || "Yeni sekme"}</span>
                 <span className="arama__url">{s.url}</span>
                 {(s.durum === "uyuyan" || s.durum === "atilmis") && (

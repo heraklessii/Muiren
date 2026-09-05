@@ -21,7 +21,7 @@
  * başlık çubuğunun işini bu satır görüyor (`docs/Frontend.md`).
  */
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
 import {
   Arti,
@@ -36,6 +36,7 @@ import {
   Sessiz,
 } from "./Ikonlar";
 import { PencereDugmeleri } from "./PencereDugmeleri";
+import { SekmeIkonu } from "./SekmeIkonu";
 import { useFavicon } from "../hooks/useFavicon";
 import type { Grup, GrupId, SekmeId, SekmeOzeti } from "../ipc/tipler";
 
@@ -125,6 +126,66 @@ export function SekmeSeridi({
   const [hedef, ayarlaHedef] = useState<number | null>(null);
   const favicon = useFavicon();
 
+  /**
+   * Klavye odağındaki sekme — **etkin sekme değil**.
+   *
+   * `role="tablist"` içinde her sekmeye `tabIndex=0` vermek, 50 sekmelik bir
+   * şeritte Tab tuşunu 50 kez basmak demekti: klavyeyle adres çubuğuna
+   * geçmek pratikte imkânsızdı. Doğrusu **dolaşan odak** (roving tabindex):
+   * şerit tek bir durak, içinde ok tuşlarıyla geziliyor.
+   *
+   * Ok tuşları sekmeyi **etkinleştirmiyor**, yalnız odağı taşıyor
+   * (WAI-ARIA'nın "elle etkinleştirme" kalıbı). Bu tercih burada mecburi:
+   * otomatik etkinleştirme uyuyan bir sekmenin üstünden geçerken onu
+   * uyandırırdı ve klavyeyle şeridi taramak projenin tek iddiasını
+   * çökertirdi (CLAUDE.md #5).
+   */
+  const [odakId, ayarlaOdakId] = useState<SekmeId | null>(null);
+  const ogeler = useRef(new Map<SekmeId, HTMLDivElement | null>());
+
+  /** Katlanmış grubun sekmeleri çizilmiyor; odak da onlara gitmiyor. */
+  const gezilebilir = sekmeler.filter((s) => !s.katli);
+  const odakHedefi =
+    gezilebilir.find((s) => s.id === odakId)?.id ??
+    gezilebilir.find((s) => s.etkin)?.id ??
+    gezilebilir[0]?.id ??
+    null;
+
+  /**
+   * Etkin sekme **görünür** olmak zorunda.
+   *
+   * 50 sekmede şerit kaydırmaya geçiyor ve etkin sekme kolayca ekranın
+   * dışında kalıyor: `Ctrl+Tab` ile gezinen ya da `Ctrl+T` ile yeni sekme
+   * açan kullanıcı, açtığı sekmeyi göremiyordu. Kaydırma buradan yapılıyor
+   * çünkü hangi sekmenin etkin olduğu **backend'den** geliyor: kapı
+   * hangisiyse (kısayol, köprü, oturum geri yükleme) sonuç aynı.
+   *
+   * `smooth` DEĞİL: 50 sekmelik bir şeritte yumuşak kaydırma her sekme
+   * değişiminde bir animasyon demek ve `docs/Frontend.md` bunu bilerek
+   * dışarıda bırakıyor. Hareket azaltma isteği olan kullanıcı için de tek
+   * doğru cevap bu.
+   */
+  const etkinId = sekmeler.find((s) => s.etkin && !s.katli)?.id ?? null;
+  useEffect(() => {
+    if (etkinId === null) return;
+    ogeler.current.get(etkinId)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [etkinId]);
+
+  /** Odağı listede `adim` kadar kaydırır; uçlarda duruyor, sarmıyor. */
+  const odagiTasi = (adim: number | "bas" | "son") => {
+    if (gezilebilir.length === 0) return;
+    const simdiki = gezilebilir.findIndex((s) => s.id === odakHedefi);
+    const yeni =
+      adim === "bas"
+        ? 0
+        : adim === "son"
+          ? gezilebilir.length - 1
+          : Math.min(Math.max(simdiki + adim, 0), gezilebilir.length - 1);
+    const id = gezilebilir[yeni].id;
+    ayarlaOdakId(id);
+    ogeler.current.get(id)?.focus();
+  };
+
   const grupBul = (id: GrupId | null) =>
     id === null ? null : (gruplar.find((g) => g.id === id) ?? null);
 
@@ -192,7 +253,10 @@ export function SekmeSeridi({
               {!s.katli && (
                 <div
                   role="tab"
-                  tabIndex={0}
+                  ref={(el) => {
+                    ogeler.current.set(s.id, el);
+                  }}
+                  tabIndex={s.id === odakHedefi ? 0 : -1}
                   aria-selected={s.etkin}
                   title={ipucu(s)}
                   draggable
@@ -210,10 +274,28 @@ export function SekmeSeridi({
                     .join(" ")}
                   style={{ "--derinlik": s.derinlik } as React.CSSProperties}
                   onClick={() => onEtkinlestir(s.id)}
+                  onFocus={() => ayarlaOdakId(s.id)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       onEtkinlestir(s.id);
+                    } else if (e.key === "ArrowRight") {
+                      e.preventDefault();
+                      odagiTasi(1);
+                    } else if (e.key === "ArrowLeft") {
+                      e.preventDefault();
+                      odagiTasi(-1);
+                    } else if (e.key === "Home") {
+                      e.preventDefault();
+                      odagiTasi("bas");
+                    } else if (e.key === "End") {
+                      e.preventDefault();
+                      odagiTasi("son");
+                    } else if (e.key === "Delete" && !s.sabit) {
+                      // Sabitlenmiş sekme kapatma düğmesi bile çizmiyor;
+                      // klavyenin ondan fazlasını yapmaması gerekiyor.
+                      e.preventDefault();
+                      onKapat(s.id);
                     }
                   }}
                   onAuxClick={(e) => {
@@ -259,15 +341,16 @@ export function SekmeSeridi({
                     </span>
                   )}
 
-                  {/* Favicon sayfadan gelen bir görsel ama **adres değil**:
+                  {/* İkon + durum halkası tek öğe (`styles.css`, "Durum
+                      halkası"): 44 piksele inmiş bir sekmede görünen tek şey
+                      bu ve hem "hangi site" hem "bellekte mi" sorusunu
+                      birlikte cevaplaması gerekiyor.
+
+                      Favicon sayfadan gelen bir görsel ama **adres değil**:
                       backend baytları alıp diske yazdı, buraya bir `data:`
                       adresi olarak geliyor. Kabuk hiçbir uzak istek
                       yapmıyor (`src-tauri/src/favicon/mod.rs`). */}
-                  {faviconAdresi(s) && (
-                    <img className="sekme__favicon" src={faviconAdresi(s)!} alt="" />
-                  )}
-
-                  <span className="sekme__isaret" aria-hidden />
+                  <SekmeIkonu sekme={s} adres={faviconAdresi(s)} />
 
                   {/* Başlık sayfadan geliyor: backend temizledi, React
                       kaçışlıyor. `dangerouslySetInnerHTML` yok

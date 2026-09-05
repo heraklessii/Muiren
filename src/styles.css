@@ -72,6 +72,12 @@
   --ok: #a3e635;
   --paused: #94a3b8;
 
+  /* Örtülerin arkasındaki perde. Koyu temada zeminin kendisi yeterince
+     karanlık; açık temada aynı formül gri bir sis veriyor ve arkadaki ekran
+     okunur kalıyor — o yüzden açık temada metin renginden türetiliyor.
+     Formül tema başına ayrı, KAYNAK yine temanın kendi jetonları. */
+  --perde: color-mix(in srgb, var(--bg-sunken) 78%, transparent);
+
   --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
   --shadow-2: 0 8px 24px -6px rgb(0 0 0 / 60%);
   --shadow-3: 0 24px 64px -12px rgb(0 0 0 / 70%);
@@ -101,6 +107,8 @@
   --accent-soft: rgb(10 107 98 / 10%);
   --accent-line: rgb(10 107 98 / 30%);
   --on-accent: #ffffff;
+
+  --perde: color-mix(in srgb, var(--text) 38%, transparent);
 
   --error: #c0392b;
   --warning: #b45309;
@@ -143,18 +151,64 @@
   --control-height: 32px;
 
   /* Kabuk kasıtlı olarak ince: iki satır (docs/Frontend.md). */
-  --serit-height: 38px;
-  --gezinme-height: 42px;
+  --serit-height: 40px;
+  --gezinme-height: 44px;
 
-  /* Sekme 240'tan başlıyor, sıkışınca 52'ye kadar daralıyor (favicon + ses
-     göstergesi), sonra şerit kaydırmaya geçiyor. Daha fazla daralma yok:
-     12 piksellik sekme kimseye yaramıyor (docs/Sekmeler.md). */
+  /* Sekme 240'tan başlıyor, sıkışınca 44'e kadar daralıyor (durum halkalı
+     favicon + ses göstergesi), sonra şerit kaydırmaya geçiyor. Daha fazla
+     daralma yok: 12 piksellik sekme kimseye yaramıyor (docs/Sekmeler.md).
+     Etkin sekmenin alt sınırı ayrı ve yüksek — kullanıcının ŞU AN baktığı
+     sayfanın adı, 40 sekme açıkken bile okunabilmeli. */
   --sekme-max: 240px;
-  --sekme-min: 52px;
+  --sekme-min: 44px;
+  --sekme-etkin-min: 152px;
 
   --ease: cubic-bezier(0.2, 0.6, 0.3, 1);
   --t-fast: 110ms;
   --t-med: 180ms;
+
+  /* -------------------------------------------------------------------------
+   * Türetilmiş yüzeyler
+   *
+   * Bunlar `color-mix` ile **temanın kendi jetonlarından** çıkıyor ve
+   * bilerek öyle: kullanıcı teması `--bg-panel` ile `--accent` değerini
+   * değiştirebiliyor (`docs/Temalar.md` beyaz listesi) ama buradaki
+   * türevleri değiştiremiyor. Sabit bir renk yazsaydık, koyu temaya göre
+   * ayarlanmış bir vurgu açık temada görünmez olurdu — tema listesi
+   * büyüdükçe fark edilmeyecek bir kusur.
+   *
+   * Kural: **yeni bir renk jetonu eklerken ya beyaz listeye giren bir
+   * jetondan türet ya da hiç ekleme.**
+   * ---------------------------------------------------------------------- */
+
+  /* Şeridin üstünde gezinen sekme; seçili değil ama fare orada. */
+  --yuzey-hover: color-mix(in srgb, var(--text) 7%, transparent);
+  --yuzey-basili: color-mix(in srgb, var(--text) 12%, transparent);
+  /* Cam yüzey: örtü ve menü panelleri. */
+  --cam: color-mix(in srgb, var(--bg-panel) 88%, transparent);
+  /* Odak halkası; `outline` bunu kullanıyor. */
+  --halka: color-mix(in srgb, var(--accent) 70%, transparent);
+
+  /* Sekme kabuğunun köşe yuvarlaklığı; `--radius` temadan gelebiliyor. */
+  --sekme-radius: 10px;
+}
+
+/*
+ * Hareket azaltma isteğine uyuluyor.
+ *
+ * Sekme durumu zaten animasyonsuz (`docs/Frontend.md`, 50 sekmede 30 geçiş
+ * maliyeti) ama düğme ve örtülerin küçük geçişleri var. Vestibüler
+ * rahatsızlığı olan kullanıcı için bunlar da kapanıyor — tarayıcı günün
+ * her saatinde açık duran bir program.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -310,7 +364,7 @@ svg {
   align-items: center;
   gap: var(--space-1);
   height: var(--serit-height);
-  padding: 0 var(--space-2);
+  padding: 0 var(--space-1) 0 var(--space-2);
   background: var(--bg-sunken);
   border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
@@ -318,14 +372,21 @@ svg {
 
 .serit__liste {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 2px;
   flex: 1 1 auto;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   height: 100%;
-  padding-top: var(--space-1);
+}
+
+/* Şerit kendi kaydırma çubuğunu çizmiyor: 40 piksellik bir satırda 10
+   piksellik bir çubuk, sekmelerin yerini yiyor. `scrollbar-width` şart —
+   Chromium standart özelliği `::-webkit-scrollbar` kuralına tercih ediyor ve
+   yalnız ikincisi yazıldığında çubuk geri geliyor. */
+.serit__liste {
+  scrollbar-width: none;
 }
 
 .serit__liste::-webkit-scrollbar {
@@ -337,29 +398,81 @@ svg {
   color: var(--text-muted);
 }
 
+/*
+ * Sekme.
+ *
+ * Şeride yapışık trapez değil, **yüzen bir kapsül**. Sebebi biçimsel değil:
+ * yapışık sekme kenarlığını alt çizgiyle paylaşmak zorunda ve o çizgi
+ * uyuyan/atılmış sekmelerin kesikli kenarlığıyla çakışıyordu — durum, tam da
+ * göstermesi gereken yerde bulanıklaşıyordu.
+ *
+ * `container-type: inline-size`: içindekiler sekmenin **kendi** genişliğine
+ * göre eleniyor (aşağıdaki `@container` kuralları). Eskiden bu karar pencere
+ * genişliğine bakıyordu (`@media (max-width: 900px)`) ve yanlıştı: 1600
+ * piksellik bir pencerede 40 sekme açan kullanıcının sekmeleri de 52 piksele
+ * iniyor, ama kural pencere geniş diye kapatma düğmesini çizmeye devam
+ * ediyordu.
+ */
 .sekme {
   position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  /* 240'tan başlıyor, 52'ye kadar daralıyor, sonra şerit kayıyor. */
+  /* 240'tan başlıyor, 44'e kadar daralıyor, sonra şerit kayıyor. */
   flex: 1 1 var(--sekme-max);
   max-width: var(--sekme-max);
   min-width: var(--sekme-min);
+  height: calc(var(--serit-height) - 10px);
   padding: 0 var(--space-2);
   padding-left: calc(var(--space-2) + var(--derinlik, 0) * 10px);
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-bottom: none;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--sekme-radius);
+  color: var(--text-muted);
   cursor: default;
   overflow: hidden;
+  container-type: inline-size;
   /*
    * Durum değişimi ANINDA. 50 sekmede aynı anda 30 geçiş animasyonu tam da
-   * kaçındığımız türden bir maliyet (docs/Frontend.md).
+   * kaçındığımız türden bir maliyet (docs/Frontend.md). Zemin rengi tek
+   * istisna: fare imlecinin altındaki TEK sekmeyi ilgilendiriyor, toplu bir
+   * maliyeti yok.
    */
-  transition: none;
+  transition: background-color var(--t-fast) var(--ease);
+}
+
+.sekme:hover {
+  background: var(--yuzey-hover);
+  color: var(--text);
+}
+
+/*
+ * Etkin sekme okunur kalmak zorunda.
+ *
+ * Alt sınırı ayrı: 14 sekmede bile hepsi 52 piksele iniyordu ve kullanıcının
+ * ŞU AN baktığı sayfanın adı bile görünmüyordu. Etkin sekme daha geç
+ * daralıyor; daralması gereken zaten diğerleri.
+ */
+.sekme--etkin {
+  min-width: var(--sekme-etkin-min);
+  background: var(--bg-elevated);
+  border-color: var(--border);
+  color: var(--text);
+  box-shadow: var(--shadow-1);
+}
+
+/* Etkin sekmenin altında kısa vurgu çizgisi — kapsülün içinde. */
+.sekme--etkin::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  max-width: 40%;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
 }
 
 .sekme__ad {
@@ -371,12 +484,108 @@ svg {
   font-size: var(--font-sm);
 }
 
-.sekme__isaret {
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-pill);
-  background: var(--border-strong);
+.sekme--etkin .sekme__ad {
+  font-weight: 500;
+}
+
+/* ---------------------------------------------------------------------------
+ * Durum halkası
+ *
+ * Sekmenin bellek durumu ARTIK ayrı bir noktada değil, favicon'un
+ * çevresinde. İki sebebi var ve ikisi de yer:
+ *
+ * - 44 piksele inmiş bir sekmede favicon dışında hiçbir şey görünmüyor.
+ *   Durum ayrı bir nokta olsaydı tam da en çok sekme açıkken — yani durumu
+ *   bilmenin en çok işe yaradığı anda — kaybolurdu.
+ * - Favicon zaten "bu hangi site" sorusunun cevabı; halkası "ve şu an
+ *   bellekte mi" sorusununki. İki bilgi tek bakışta.
+ *
+ * Bu bir tanıtım öğesi değil, GÜVEN öğesi (docs/Sekmeler.md).
+ * ------------------------------------------------------------------------- */
+
+.durum {
+  position: relative;
   flex: 0 0 auto;
+  width: var(--durum-boyut, 18px);
+  height: var(--durum-boyut, 18px);
+  display: grid;
+  place-items: center;
+}
+
+.durum::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 7px;
+  border: 1.5px solid transparent;
+  pointer-events: none;
+}
+
+.durum__favicon {
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+}
+
+/*
+ * Favicon'u olmayan sekme için harf.
+ *
+ * Boş bir kare bırakmak, dar sekmede sekmeyi tamamen kimliksiz yapıyordu:
+ * kullanıcı 44 piksellik altı gri dikdörtgen arasından aradığını
+ * seçemiyordu. Harf sayfadan gelen metnin ilk karakteri — React kaçışlıyor,
+ * bir karakterden ibaret ve düzen bozamıyor (CLAUDE.md #8).
+ */
+.durum__harf {
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  background: var(--yuzey-basili);
+  color: var(--text-muted);
+}
+
+/* Kabuğun kendi sayfası: ailenin pusulası, vurgu renginde. */
+.durum--kabuk {
+  color: var(--accent);
+}
+
+.durum--etkin::after {
+  border-color: var(--accent);
+}
+
+/* Uyuyan: halka var ama sönük, ikon soluk. Sayfa duruyor, bellekte değil. */
+.durum--uyuyan::after {
+  border-color: var(--paused);
+}
+
+.durum--uyuyan .durum__favicon,
+.durum--uyuyan .durum__harf {
+  opacity: 0.55;
+}
+
+.sekme--uyuyan .sekme__ad {
+  color: var(--text-muted);
+}
+
+/* Atılmış: kesikli halka — "burada bir sekme var ama içeriği yok". */
+.durum--atilmis::after {
+  border-color: var(--border-strong);
+  border-style: dashed;
+}
+
+.durum--atilmis .durum__favicon,
+.durum--atilmis .durum__harf {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+.sekme--atilmis .sekme__ad {
+  color: var(--text-muted);
+  opacity: 0.75;
 }
 
 .sekme__sabit {
@@ -398,57 +607,34 @@ svg {
 
 .sekme__kapat:hover,
 .sekme__ses:hover {
-  background: var(--bg-elevated);
+  background: var(--yuzey-basili);
   color: var(--text);
 }
 
-/* Sekme daralınca kapatma düğmesi yalnız etkin ve gezilen sekmede kalıyor;
-   52 pikselde her ikon sığmıyor. */
-@media (max-width: 900px) {
+/* ---------------------------------------------------------------------------
+ * Yoğunluk kademeleri — sekmenin KENDİ genişliğine göre.
+ * ------------------------------------------------------------------------- */
+
+/* Dar: kapatma düğmesi yalnız fare üstündeyken ya da sekme etkinken. */
+@container (max-width: 168px) {
   .sekme:not(.sekme--etkin):not(:hover) .sekme__kapat {
     display: none;
   }
 }
 
-.sekme--etkin {
-  background: var(--bg-elevated);
-  border-color: var(--border-strong);
-}
+/* Çok dar: yalnız ikon ve durum halkası. Ses göstergesi kalıyor — sesi
+   çalan sekmeyi bulmak, adını okumaktan daha acil. */
+@container (max-width: 112px) {
+  .sekme__ad,
+  .sekme__kapat,
+  .sekme__sabit {
+    display: none;
+  }
 
-/* Etkin sekmenin üstünde vurgu çizgisi. */
-.sekme--etkin::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 2px;
-  background: var(--accent);
-}
-
-.sekme--etkin .sekme__isaret {
-  background: var(--accent);
-}
-
-/*
- * Uyuyan soluk, atılmış daha soluk + kesikli kenarlık.
- * Bu bir tanıtım öğesi değil, GÜVEN öğesi: kullanıcı neyin bellekte olduğunu
- * bir bakışta görüyor (docs/Sekmeler.md).
- */
-.sekme--uyuyan {
-  opacity: 0.6;
-}
-
-.sekme--uyuyan .sekme__isaret {
-  background: var(--paused);
-}
-
-.sekme--atilmis {
-  opacity: 0.4;
-  border-style: dashed;
-}
-
-.sekme--atilmis .sekme__isaret {
-  background: transparent;
-  border: 1px solid var(--border-strong);
+  .sekme {
+    justify-content: center;
+    padding-left: var(--space-2);
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -486,11 +672,27 @@ svg {
   background: var(--bg-sunken);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
+  transition:
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
 }
 
+.adres:hover:not(.adres--duzenleniyor) {
+  border-color: var(--border-strong);
+}
+
+/*
+ * Düzenleme kipi görünür olmak zorunda.
+ *
+ * Adres çubuğu iki ayrı şey: okunacak bir adres ve yazılacak bir alan.
+ * İkisi aynı görünürse kullanıcı yazmaya başlamadan hangisinde olduğunu
+ * bilmiyor — özellikle `Ctrl+L` ile geçildiğinde, fare hiç kıpırdamadığı
+ * için. Halka o yüzden kalın: bu bir süs değil, kip göstergesi.
+ */
 .adres--duzenleniyor {
-  border-color: var(--accent-line);
+  border-color: var(--accent);
   background: var(--bg);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .adres__kilit {
@@ -549,26 +751,132 @@ svg {
 }
 
 /* ---------------------------------------------------------------------------
+ * Nabız — gezinme çubuğundaki bellek göstergesi
+ *
+ * Muiren'in tek iddiası bellek ve o iddia `Ctrl+Shift+M` ile açılan bir
+ * panelin arkasındaydı. Bu çubuk onu her an görünür kılıyor: üç dilim
+ * (uyanık / uyuyan / atılmış) ve bir rakam.
+ *
+ * Ölçüsü bilerek küçük. Gezinme çubuğu sayfanın değil kabuğun yeri ve kabuk
+ * "kasıtlı olarak ince" (`docs/Frontend.md`); gösterge de o bütçeden
+ * yiyor.
+ * ------------------------------------------------------------------------- */
+
+.nabiz {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+  height: 26px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-sunken);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: var(--font-xs);
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+
+.nabiz:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.nabiz__cubuk {
+  display: flex;
+  width: 44px;
+  height: 6px;
+  gap: 1px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.nabiz__dilim {
+  height: 100%;
+  min-width: 0;
+}
+
+.nabiz__dilim--uyanik {
+  background: var(--accent);
+}
+
+.nabiz__dilim--uyuyan {
+  background: var(--paused);
+}
+
+/*
+ * Atılmış sekmenin dilimi **dolu değil**: sekme duruyor ama içeriği bellekte
+ * değil. Aynı ayrım sekme şeridindeki kesikli halkada da var; iki yerde iki
+ * farklı dil kullanmak, göstergeyi öğrenilecek bir şey yerine çözülecek bir
+ * bilmeceye çevirirdi.
+ */
+.nabiz__dilim--atilmis {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--border-strong) 0 2px,
+    transparent 2px 4px
+  );
+}
+
+.nabiz__sayi {
+  white-space: nowrap;
+}
+
+/* Baskı arttığında gösterge de söylüyor: rakamı okumadan renkten anlaşılıyor. */
+.nabiz--yuksek {
+  border-color: color-mix(in srgb, var(--warning) 45%, transparent);
+  color: var(--warning);
+}
+
+.nabiz--kritik {
+  border-color: color-mix(in srgb, var(--error) 55%, transparent);
+  color: var(--error);
+}
+
+.nabiz--kritik .nabiz__dilim--uyanik {
+  background: var(--error);
+}
+
+/* ---------------------------------------------------------------------------
  * Yeni sekme sayfası
  * ------------------------------------------------------------------------- */
 
+/*
+ * Sayfa dikeyde ORTALANMIYOR, üstten başlıyor.
+ *
+ * Ortalanmış bir yerleşim, içerik büyüyüp küçüldükçe arama kutusunu yukarı
+ * aşağı kaydırıyor: geçmişi olmayan yeni kullanıcıda kutu ekranın ortasında,
+ * bir hafta sonra yukarıda. Kutu her açılışta aynı yerde olmak zorunda —
+ * kullanıcı oraya bakmadan yazmaya başlıyor.
+ */
 .yeni {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-4);
-  padding: var(--space-6);
+  gap: var(--space-5);
+  padding: clamp(var(--space-5), 9vh, 96px) var(--space-6) var(--space-6);
   text-align: center;
+  overflow-y: auto;
+}
+
+.yeni__ust {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: min(680px, 100%);
 }
 
 .yeni__marka {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .yeni__marka h1 {
@@ -583,15 +891,20 @@ svg {
   align-items: center;
   gap: var(--space-3);
   width: min(560px, 100%);
-  height: 44px;
+  height: 46px;
   padding: 0 var(--space-4);
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-1);
+  transition:
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
 }
 
 .yeni__form:focus-within {
-  border-color: var(--accent-line);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .yeni__ikon {
@@ -624,18 +937,220 @@ svg {
 }
 
 /* ---------------------------------------------------------------------------
+ * Yeni sekme: sık gidilenler, yer imleri, bellek kartı
+ *
+ * Hepsinin kaynağı **yerel disk** (`hooks/useYeniSekme.ts`). Bir tarayıcının
+ * açtığı ilk sayfa, henüz hiçbir siteye gitmemişken bir sunucuya
+ * bağlanıyorsa o tarayıcı telemetri topluyor demek (karar #5).
+ * ------------------------------------------------------------------------- */
+
+.yeni__bolum {
+  width: min(680px, 100%);
+  text-align: left;
+}
+
+.yeni__baslik {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.kutular {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kutu {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: var(--space-3);
+  align-items: center;
+  width: 100%;
+  padding: var(--space-3);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background-color var(--t-fast) var(--ease);
+}
+
+.kutu:hover {
+  background: var(--bg-elevated);
+  border-color: var(--grup-renk, var(--border-strong));
+}
+
+/* Harf, alan adından türetilmiş bir renk alıyor (`renk--*` sınıfları, yani
+   `tabs::GrupRengi` enum'ının CSS karşılığı). Aynı site hep aynı renkte:
+   kullanıcı kutunun yerini adından önce renginden buluyor. */
+.kutu__harf {
+  grid-row: 1 / 3;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--grup-renk, var(--accent)) 18%, transparent);
+  color: var(--grup-renk, var(--accent));
+  font-size: var(--font-lg);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.kutu__ad {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-sm);
+  font-weight: 500;
+}
+
+.kutu__alan {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+}
+
+.yeni__serit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.yeni__yerimi {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  height: 28px;
+  padding: 0 var(--space-3);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--font-sm);
+  cursor: pointer;
+  transition:
+    color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+}
+
+.yeni__yerimi:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+/*
+ * Bellek kartı — politikanın görünür olduğu yer.
+ *
+ * Sayfanın en altında ve sessiz: bir tanıtım afişi değil, çalışan bir
+ * ölçümün özeti. Rakam `BellekOzeti` içinden geliyor, sayfa kendi ölçümünü
+ * yapmıyor ve hiçbir sekmeyi uyandırmıyor (CLAUDE.md #5).
+ */
+.yeni__kart {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: min(680px, 100%);
+  padding: var(--space-3) var(--space-4);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius);
+  text-align: left;
+}
+
+.yeni__kartIkon {
+  display: flex;
+  color: var(--accent);
+}
+
+.yeni__kartMetin {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.yeni__kartMetin b {
+  font-size: var(--font-md);
+  font-weight: 600;
+}
+
+.yeni__kartMetin span {
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+}
+
+.yeni__kartMetin em {
+  color: var(--accent);
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------------
  * Sekme arama
  * ------------------------------------------------------------------------- */
 
+/*
+ * Örtü perdesi.
+ *
+ * Zemin `rgb(0 0 0 / 45%)` DEĞİL, temanın kendi karanlığından türetilmiş
+ * (`--perde`): sabit siyah, açık temada gri bir sis gibi duruyor ve arkadaki
+ * ekran hâlâ okunuyordu. Örtünün işi arkayı **geri plana itmek** — okunur
+ * bırakırsa kullanıcının gözü hangi ekranda olduğunu söyleyemiyor.
+ *
+ * Bulanıklık ölçülü: örtü açıkken sekme webview'i zaten gizleniyor
+ * (`App.tsx`, `ortu_gorunur`), yani bulanan şey sayfanın kendisi değil
+ * kabuk. Ağır bir bulanıklık, kapanma anında bir kare tökezleme yaratıyor.
+ */
+/*
+ * Zemin `@supports` ile korunuyor. `color-mix` Chromium 111 ile geldi;
+ * WebView2 Runtime evergreen ama uzun süre çevrimdışı kalmış bir makinede
+ * eski olabiliyor ve `var()` içindeki geçersiz bir değer, önceki bildirime
+ * DÜŞMÜYOR — özellik büsbütün kayboluyor. Perdenin kaybolması demek, arkası
+ * okunan bir örtü demek; kullanıcı hangi ekranda olduğunu göremiyor. Öteki
+ * türetilmiş jetonların düşmesi bir vurgu kaybı, bunun düşmesi bir kusur.
+ */
 .ortu {
   position: fixed;
   inset: 0;
-  background: rgb(0 0 0 / 45%);
+  background: rgb(0 0 0 / 55%);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: flex-start;
   justify-content: center;
   padding-top: 12vh;
   z-index: 10;
+}
+
+@supports (background: color-mix(in srgb, red 50%, transparent)) {
+  .ortu {
+    background: var(--perde);
+  }
 }
 
 .arama {
@@ -674,9 +1189,11 @@ svg {
   overflow-y: auto;
 }
 
+/* `baseline` DEĞİL `center`: satırda artık durum halkalı bir ikon var ve
+   taban çizgisine hizalanan bir kutu, metinden bir piksel yukarıda duruyor. */
 .arama__oge {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-3);
   width: 100%;
   padding: var(--space-2) var(--space-3);
@@ -840,8 +1357,19 @@ svg {
   opacity: 0.35;
 }
 
-.sekme--hedef {
-  box-shadow: inset 2px 0 0 var(--accent);
+/* Bırakma hedefi: sekmenin SOLUNA ekleme çizgisi.
+   `box-shadow` değil `::before` — gruptaki sekme kendi renk şeridini zaten
+   `inset` gölgeyle çiziyor ve ikisi aynı özelliği paylaşıyordu: gruba ait bir
+   sekmenin üstünde sürüklerken hedef çizgisi hiç görünmüyordu. */
+.sekme--hedef::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
 }
 
 /* ---------------------------------------------------------------------------
@@ -945,24 +1473,16 @@ svg {
   background: var(--accent-soft);
 }
 
-.dikey__isaret {
-  flex: 0 0 auto;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--text-muted);
-}
-
-.dikey__oge--etkin .dikey__isaret {
-  background: var(--accent);
-}
-
-.dikey__oge--uyuyan {
-  opacity: 0.6;
-}
-
-.dikey__oge--atilmis {
-  opacity: 0.4;
+/*
+ * Durum artık ayrı bir nokta değil, ikonun halkası (`.durum`) — yatay
+ * şeritteki dilin aynısı. Satırın tamamını soldurmak da bırakıldı: soluk
+ * bir satırda BAŞLIK da okunmuyor ve dikey listenin varlık sebebi tam
+ * olarak başlığı okunur tutmak (`docs/Sekmeler.md`). Uyuyan sekmenin
+ * başlığı görünmezse liste, aradığını bulma aracı olmaktan çıkıyor.
+ */
+.dikey__oge--uyuyan .dikey__ad,
+.dikey__oge--atilmis .dikey__ad {
+  color: var(--text-muted);
 }
 
 .dikey__ad {
@@ -1693,11 +2213,8 @@ svg {
  * Sekme: favicon, gizli işareti, grup şeridi (Faz 3–5)
  * ------------------------------------------------------------------------- */
 
-.sekme__favicon {
-  flex: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
+/* Ölçüsü "Durum halkası" bölümünde; burada yalnız davranışı. */
+.durum__favicon {
   object-fit: contain;
   /* Sayfanın seçtiği bir görsel: sürüklendiğinde sekmenin sürükleme
      davranışını bozmasın. */
@@ -1720,33 +2237,54 @@ svg {
 
 /* Grubun rengi sekmenin sol kenarında ince bir şerit. Renk bir enum'dan
    geliyor (`tabs::GrupRengi`), kullanıcının yazdığı bir dizeden değil —
-   tema jetonlarındaki beyaz liste kuralıyla aynı gerekçe. */
+   tema jetonlarındaki beyaz liste kuralıyla aynı gerekçe.
+
+   `border-left` DEĞİL `inset` gölge: kapsülün yuvarlak köşesinde kalın bir
+   kenarlık, üstteki iki köşeyi kesip sekmeyi eğri gösteriyordu. Gölge köşe
+   yarıçapını takip ediyor. */
 .sekme--grupta {
-  border-left: 3px solid var(--grup-renk, var(--border));
+  box-shadow: inset 3px 0 0 var(--grup-renk, var(--border));
 }
 
+.sekme--grupta.sekme--etkin {
+  box-shadow: inset 3px 0 0 var(--grup-renk, var(--border)), var(--shadow-1);
+}
+
+/*
+ * Grup başlığı.
+ *
+ * Şeritte sekmelerle aynı yeri paylaşıyor, dolayısıyla dar olmak zorunda:
+ * iki grup başlığı iki sekme kadar yer kaplarsa grup, çözdüğünden fazla
+ * sorun çıkarır. Kimliği **rengi** taşıyor, adı değil — ad daraldığında
+ * kırpılıyor ama renk şeridi hep duruyor.
+ */
 .grup {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  flex: none;
-  height: 26px;
-  padding: 0 var(--space-2);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--grup-renk, var(--accent));
-  border-radius: var(--radius-sm);
-  background: var(--bg-elevated);
-  color: var(--text-muted);
+  flex: 0 1 auto;
+  min-width: 0;
+  height: calc(var(--serit-height) - 10px);
+  padding: 0 var(--space-2) 0 var(--space-1);
+  border: 0;
+  border-radius: var(--sekme-radius);
+  /* Şerit dolduğunda ad kırpılıp yok olabiliyor; renk şeridi kalıyor.
+     Adsız bir ok işareti, grubun kendisinden çok gürültüye benziyordu. */
+  box-shadow: inset 2px 0 0 var(--grup-renk, var(--accent));
+  background: color-mix(in srgb, var(--grup-renk, var(--accent)) 16%, transparent);
+  color: var(--grup-renk, var(--accent));
   font-size: var(--font-xs);
+  font-weight: 500;
   cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease);
 }
 
 .grup:hover {
-  color: var(--text);
+  background: color-mix(in srgb, var(--grup-renk, var(--accent)) 24%, transparent);
 }
 
 .grup__ad {
-  max-width: 120px;
+  max-width: 96px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

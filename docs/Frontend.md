@@ -65,21 +65,57 @@ pikseli alıyor.
 
 ## Sekme şeridi
 
-Ayrıntılı davranış `docs/Sekmeler.md` içinde. Görsel karşılıkları:
+Ayrıntılı davranış `docs/Sekmeler.md` içinde.
 
-| Durum | Görünüm |
-|---|---|
-| `Etkin` | `--bg-elevated` zemin, üstte `--accent` çizgi |
-| `Arkaplan` | `--bg-panel`, tam opaklık |
-| `Uyuyan` | opaklık 0.6, favicon gri tonlamalı |
-| `Atilmis` | opaklık 0.4, kesikli kenarlık |
+### Durum halkası — tek görsel dil
+
+Sekmenin bellek durumu **favicon'un çevresindeki halkada**
+(`src/components/SekmeIkonu.tsx`):
+
+| Durum | Halka | İkon |
+|---|---|---|
+| `Etkin` | `--accent`, dolu çizgi | tam |
+| `Arkaplan` | yok | tam |
+| `Uyuyan` | `--paused`, dolu çizgi | opaklık 0.55 |
+| `Atilmis` | `--border-strong`, **kesikli** | opaklık 0.35 + gri tonlama |
+
+Durumun ayrı bir nokta olarak değil halka olarak çizilmesinin sebebi **yer**:
+44 piksele inmiş bir sekmede favicon dışında hiçbir şey görünmüyor. Durum ayrı
+bir nokta olsaydı tam da en çok sekme açıkken — yani durumu bilmenin en çok işe
+yaradığı anda — kaybolurdu. Favicon zaten "bu hangi site" sorusunun cevabı;
+halkası "ve şu an bellekte mi" sorusununki.
+
+Aynı bileşen **üç yerde** kullanılıyor: yatay şerit, dikey liste ve sekme
+araması. İki yerde iki ayrı çizim, kullanıcının öğrendiği göstergeyi ikinci
+panelde yeniden öğrenmesi demek olurdu.
+
+Favicon'u olmayan sekme, adının ilk harfini alıyor (Türkçe büyültmeyle —
+CLAUDE.md #10'un simetriği). Boş bir kare, dar sekmeyi tamamen kimliksiz
+yapıyordu.
 
 Solmayı **animasyonla** yapmıyoruz; 50 sekmede aynı anda 30 geçiş animasyonu
-tam da kaçındığımız türden bir maliyet. Durum değişimi anında.
+tam da kaçındığımız türden bir maliyet. Durum değişimi anında. Tek istisna
+fare imlecinin altındaki sekmenin zemini: toplu bir maliyeti yok.
 
-Sekme genişliği: 240 px'ten başlıyor, sıkışınca 52 px'e kadar daralıyor
-(favicon + ses göstergesi), sonra şerit kaydırmaya geçiyor. Daha fazla daralma
+### Genişlik ve yoğunluk kademeleri
+
+Sekme 240 px'ten başlıyor, sıkışınca 44 px'e kadar daralıyor (durum halkalı
+favicon + ses göstergesi), sonra şerit kaydırmaya geçiyor. Daha fazla daralma
 yok — 12 piksellik sekme kimseye yaramıyor.
+
+**Etkin sekmenin alt sınırı ayrı ve yüksek** (`--sekme-etkin-min`, 152 px).
+Sebebi: 14 sekmede bile hepsi alt sınıra iniyordu ve kullanıcının **şu an
+baktığı** sayfanın adı bile görünmüyordu. Daralması gereken zaten diğerleri.
+
+İçindekilerin elenmesi sekmenin **kendi** genişliğine bakıyor (CSS
+`@container`), pencerenin genişliğine değil. Eski kural `@media (max-width:
+900px)` idi ve yanlıştı: 1600 piksellik bir pencerede 40 sekme açan
+kullanıcının sekmeleri de alt sınıra iniyor, ama kural "pencere geniş" diye
+kapatma düğmesini çizmeye devam ediyordu.
+
+Etkin sekme her zaman **görünür** tutuluyor (`scrollIntoView`, yumuşak
+değil): kısayolla gezinen ya da yeni sekme açan kullanıcı, şerit kaydırmaya
+geçtiğinde açtığı sekmeyi göremiyordu.
 
 Ses göstergesi sekmenin sağında ve **tıklanabilir** (sessize alır). Sessize
 alınan sekme koruma kaybediyor (`docs/Bellek.md`).
@@ -90,9 +126,11 @@ alınan sekme koruma kaybediyor (`docs/Bellek.md`).
   `--accent-line` kenarlık. Bu bir süs değil: kullanıcının hangi sekmenin
   gizli olduğunu **görmesi** gerekiyor, yoksa gizli sandığı sekmede geçmişe
   yazan bir arama yapıyor.
-- **Grup** sekmenin sol kenarında 3 piksellik bir şerit; renk bir enum'dan
-  geliyor (`tabs::GrupRengi`), kullanıcının yazdığı bir dizeden değil — tema
-  jetonlarındaki beyaz liste kuralıyla aynı gerekçe.
+- **Grup** sekmenin sol kenarında 3 piksellik bir şerit (`inset` gölge,
+  `border-left` değil: kalın bir kenarlık kapsülün yuvarlak köşesini kesip
+  sekmeyi eğri gösteriyordu). Renk bir enum'dan geliyor (`tabs::GrupRengi`),
+  kullanıcının yazdığı bir dizeden değil — tema jetonlarındaki beyaz liste
+  kuralıyla aynı gerekçe.
 - **Grup başlığı** yalnız grubun **ilk** sekmesinin önünde. Sıra backend'den
   geldiği gibi kullanılıyor: bir grubun sekmeleri bitişik olmayabiliyor
   (kullanıcı araya başka bir sekme sürüklemiş olabilir) ve o durumda başlık
@@ -114,6 +152,11 @@ alınan sekme koruma kaybediyor (`docs/Bellek.md`).
 - Gösterilecek biçim ne? (şema gizlenir, alan adı vurgulanır, geri kalanı
   soluk)
 
+Birinci sorunun cevabı burada **yalnız çizim için**: kilit simgesi ve vurgu
+kullanıcı yazarken anında güncellenmek zorunda. Motora ne gideceğine karar
+veren yer backend (`tabs::adres_mi`, `docs/IPC.md`) — adres çubuğu tek kapı
+değil ve kabuk kapalıyken de doğru çalışması gerekiyor.
+
 **Alan adı vurgusu bir güvenlik özelliği.** `https://banka.com.saldirgan.net/`
 adresinde vurgulanan `saldirgan.net` olacak. Uluslararasılaştırılmış alan
 adlarında (IDN) karışabilecek karakterler için punycode gösterimi — bu mantık
@@ -121,6 +164,31 @@ adlarında (IDN) karışabilecek karakterler için punycode gösterimi — bu ma
 
 Öneri listesi: geçmiş + yer imleri + açık sekmeler. **Ağ isteği yok** — arama
 motorunun canlı öneri API'si telemetri demek, kullanılmıyor.
+
+## Nabız — gezinme çubuğundaki bellek göstergesi
+
+`src/components/Nabiz.tsx`. Üç renkli kısa bir çubuk (uyanık / uyuyan /
+atılmış) ve tek bir rakam; tıklanınca bellek paneli açılıyor.
+
+Var olma sebebi: **iddia saklıydı.** Muiren'in tek iddiası bellek ve o iddiayı
+görmek için `Ctrl+Shift+M` ile bir panel açmak gerekiyordu. Panelin kendisi
+doğru bir yer ama kapalı bir çekmecede duruyordu; kullanıcı politikanın
+çalıştığını hiç görmeden aylarca kullanabiliyordu.
+
+Kurallar bellek paneliyle aynı:
+
+- Hiçbir sekmeye dokunmuyor (CLAUDE.md #5); tek kaynağı `bellek_ozeti` olayı.
+- `olcum_yaklasik` true ise rakamın başında `~` var; biçimleme `lib/bicim.ts`
+  içinde ve panelle **aynı fonksiyon** — iki yerde iki farklı sayı görünmesin.
+- Özet **yokken çizilmiyor**. Gözcü ilk turunu koşmadan sıfır göstermek,
+  ölçümün yokluğunu bir ölçüm sonucu gibi sunmak olurdu.
+- Atılmış sekmenin dilimi dolu değil, kesikli — sekme şeridindeki kesikli
+  halkayla aynı dil.
+
+Gösterge sürekli göründüğü için gözcünün **ilk turu öne alındı**
+(`memory/gozcu.rs`, `ILK_BEKLEME_SN`): döngü önce uyuyup sonra ölçtüğü için
+ilk özet bir periyot sonra (varsayılan 20 sn) çıkıyordu ve o süre boyunca
+çubuğun yeri boş kalıyordu.
 
 ## Bellek paneli
 
@@ -281,11 +349,54 @@ Her kanca aynı iskelet: ilk değeri komutla çek, sonra olayla güncelle,
 
 ## Erişilebilirlik ve pencere
 
-- Sekme şeridi klavyeyle gezilebiliyor; odak halkası `--accent-line`.
+- **Sekme listelerinde dolaşan odak** (roving tabindex). `role="tablist"`
+  içindeki her sekmeye `tabIndex=0` vermek, 50 sekmelik bir şeritte Tab
+  tuşuna 50 kez basmak demekti: klavyeyle adres çubuğuna geçmek pratikte
+  imkânsızdı. Şerit tek bir durak; içinde ok tuşlarıyla geziliyor, `Home`/
+  `End` uçlara gidiyor, `Delete` sekmeyi kapatıyor.
+
+  > Ok tuşları sekmeyi **etkinleştirmiyor**, yalnız odağı taşıyor
+  > (WAI-ARIA'nın "elle etkinleştirme" kalıbı). Bu tercih burada mecburi:
+  > otomatik etkinleştirme, uyuyan bir sekmenin üstünden geçerken onu
+  > uyandırırdı ve klavyeyle şeridi taramak projenin tek iddiasını
+  > çökertirdi (CLAUDE.md #5). Aynısı dikey liste için de geçerli.
+
+- **Escape açık örtüyü kapatıyor** ve backend'e gitmiyor (`App.tsx`,
+  `ortuKapat`). Backend tablosunda Escape'in karşılığı `Durdur`
+  (`src-tauri/src/kisayol.rs`) ve ikisi aynı tuşta çakışıyordu: ayarlar
+  ekranındayken Escape sayfanın yüklenmesini durduruyor, ekran açık
+  kalıyordu. Ayrım kabukta veriliyor çünkü "hangi örtü üstte" yalnız kabuğun
+  bildiği bir şey.
+- Odak halkası `--accent`; her etkileşimli öğede `:focus-visible`.
+- `prefers-reduced-motion` isteğine uyuluyor: kalan küçük geçişler de
+  kapanıyor. Sekme durumu zaten animasyonsuz.
 - Pencere kenarlıksız (özel başlık çubuğu) ama sürükleme alanı ve pencere
   düğmeleri Windows davranışına uyuyor — çift tıkla büyüt, kenara sürükle
   yasla dahil.
 - Tam ekranda kabuk tamamen çekiliyor (`docs/Medya.md`).
+
+## Geliştirme: kabuğu tarayıcıda açmak
+
+Arayüz hatasını ayıklamanın en ucuz yolu kabuğu düz bir tarayıcıda açmak —
+`PencereDugmeleri` bunu bilerek mümkün kılıyor (Tauri bağlamı yokken
+fırlatmıyor). Ama Tauri bağlamı olmadan her komut düşüyor ve ekranda boş bir
+şerit kalıyordu: görülecek bir şey yok.
+
+`src/dev/sahte.ts` o boşluğu dolduruyor. `window.__TAURI_INTERNALS__` yerine
+geçip komutlara bellek içi bir defterden cevap veriyor; sekmeler açılıyor,
+kapanıyor, gezinme oluyor, bellek özeti akıyor.
+
+```
+npm run dev  →  http://localhost:1420/?sahte
+```
+
+**Bu bir test değil ve bir sözleşme değil.** Kararların doğruluğu Rust
+tarafında test ediliyor; buradaki mantık yalnız ekranda gerçekçi bir tablo
+çizmek için var. `docs/IPC.md` ile ayrışırsa hata sahte tarafındadır.
+
+Üretim paketine **girmiyor**: çağıran yer `import.meta.env.DEV` ile korunuyor
+ve dinamik içe aktarım derlemede eleniyor (`npm run build` çıktısında `sahte`
+dizesi hiç geçmiyor).
 
 ## Test
 

@@ -1,7 +1,7 @@
 {
   "name": "muiren",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Cok sekmede az RAM harcayan masaustu web tarayicisi - Tauri v2 + Rust + WebView2",
   "license": "Apache-2.0",

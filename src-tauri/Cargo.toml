@@ -1,6 +1,6 @@
 [package]
 name = "muiren"
-version = "0.1.0"
+version = "0.2.0"
 description = "Cok sekmede az RAM harcayan masaustu web tarayicisi"
 edition = "2021"
 rust-version = "1.82.0"
